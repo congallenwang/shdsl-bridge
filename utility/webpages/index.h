@@ -4,9 +4,9 @@
 #ifndef INDEX_H_INC
 #define INDEX_H_INC
 
-#define INDEX_SIZE 822
+#define INDEX_SIZE 832
 
-extern const unsigned char index_htm[INDEX_SIZE];
+extern const uchar  index_htm[INDEX_SIZE];
 
 
 #endif  // INDEX_H_INC

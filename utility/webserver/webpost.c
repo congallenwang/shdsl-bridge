@@ -324,6 +324,10 @@ void web_select_func (struct httpd_state  *hs)
 				}
 		}
 
+             if(find_form_var("dslmode"))
+             {
+                    rt_kprintf("dslmode:%d\n",atoi(form_var));
+             }
 	web_select_page("postdemo", hs);
 }
 extern char Vxy[];
@@ -376,6 +380,103 @@ void web_radio_func (struct httpd_state  *hs)
 		}
 		
 		web_select_page("postdemo", hs);
+}
+
+
+#include "configmanage.h"
+extern CONFIG_PARAM g_config;
+
+/*
+int atoi(unsigned char* str)
+{
+    return 1;
+}
+*/
+
+void web_dslconfig_func(struct httpd_state *hs)
+{
+    //dslService=1&caplist_co=0&caplist_rt=0&dslWires=3&dslStandard=7&lineprobe=1&extend=0&extend_rate_fix_value=0&minrate=3&maxrate=89&dslmode=13&SUBMIT=Apply
+    int dslService;
+    int caplist_co;
+    int caplist_rt;
+    int dslWires;
+    int dslStandard;
+    int lineprobe;
+    int extend;
+    int extend_rate_fix_value;
+    int minrate;
+    int maxrate;
+    int dslmode;
+
+    
+    if ( !password_entered(hs) ) 
+    {
+        return;
+    }
+
+    if(find_form_var("dslService"))
+    {
+        g_config.dslService = atoi(form_var);
+        rt_kprintf("dslService:%d\n",g_config.dslService);
+    }
+
+    if(find_form_var("caplist_co"))
+    {
+        g_config.caplist_co = atoi(form_var);
+        rt_kprintf("caplist_co:%d\n",g_config.caplist_co);
+    }
+
+    if(find_form_var("caplist_rt"))
+    {
+        g_config.caplist_rt = atoi(form_var);
+        rt_kprintf("caplist_rt:%d\n",g_config.caplist_rt);
+    }
+
+    if(find_form_var("dslWires"))
+    {
+        g_config.dslWires = atoi(form_var);
+        rt_kprintf("dslWires:%d\n",g_config.dslWires);
+    }
+
+    if(find_form_var("dslStandard"))
+    {
+        g_config.dslStandard = atoi(form_var);
+        rt_kprintf("dslStandard:%d\n",g_config.dslStandard);
+    }
+
+    if(find_form_var("lineprobe"))
+    {
+        g_config.lineprobe = atoi(form_var);
+        rt_kprintf("lineprobe:%d\n",g_config.lineprobe);
+    }
+    
+    if(find_form_var("extend_rate_fix_value"))
+    {
+        g_config.extend_rate_fix_value = atoi(form_var);
+        rt_kprintf("dslmode:%d\n",g_config.extend_rate_fix_value);
+    }
+
+    if(find_form_var("maxrate"))
+    {
+        g_config.maxrate=maxrate = atoi(form_var);
+        rt_kprintf("maxrate:%d\n",maxrate);
+    }
+
+     if(find_form_var("minrate"))
+    {
+        g_config.minrate= atoi(form_var);
+        rt_kprintf("minrate:%d\n",g_config.minrate);
+     }
+
+    if(find_form_var("dslmode"))
+    {
+        g_config.dslmode = atoi(form_var);
+        rt_kprintf("dslmode:%d\n",g_config.dslmode);
+    }
+
+   
+
+    web_select_page("config", hs);
 }
  
  

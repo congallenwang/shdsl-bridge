@@ -17,7 +17,7 @@ void web_check_func (struct httpd_state  *hs);
 void web_radio_func (struct httpd_state  *hs);
 void web_upload_func_done (struct httpd_state  *hs);
 void web_logout_func (struct httpd_state  *hs);
- 
+void web_dslconfig_func(struct httpd_state *hs); 
 
 
 #endif

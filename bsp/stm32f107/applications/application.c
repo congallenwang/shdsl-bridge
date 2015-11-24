@@ -136,6 +136,8 @@ void rt_starteth()
 }
 
 
+void initconfig();
+
 void rt_init_thread_entry(void* parameter)
 {
     {
@@ -185,6 +187,7 @@ void rt_init_thread_entry(void* parameter)
 
 	
 	//allen, start the eth device
+	initconfig();
 	rt_starteth();
 #endif
 

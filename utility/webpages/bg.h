@@ -4,7 +4,7 @@
 #ifndef BG_H_INC
 #define BG_H_INC
 
-#define BG_SIZE 11739
+#define BG_SIZE 38270
 
 extern const uchar  bg_gif[BG_SIZE];
 

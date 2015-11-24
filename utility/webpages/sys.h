@@ -4,7 +4,7 @@
 #ifndef SYS_H_INC
 #define SYS_H_INC
 
-#define SYS_SIZE 1172
+#define SYS_SIZE 1606
 
 extern const uchar  sys_htm[SYS_SIZE];
 

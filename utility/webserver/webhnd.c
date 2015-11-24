@@ -78,7 +78,9 @@ static struct httpd_state *reboot_hs = 0; // pnc PTR_NULL;
  *
  *
  * ************************************************************************ */
-uchar  web_logged_in = 0;
+//allen: no log in
+//uchar  web_logged_in = 0;
+uchar  web_logged_in = 1;
 #if TRANSIT_WEB_TIMEOUT
 ushort	adminIp[2];   /** The IP address of the currently connected remote host. **/
 uchar	web_failed_login = 0;

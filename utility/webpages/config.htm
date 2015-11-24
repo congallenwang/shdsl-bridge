@@ -1,0 +1,439 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="default.css">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta http-equiv="Pragma" content="no-cache">
+</head>
+<script language="JavaScript"  src="jscripts/common.js"></script>
+
+<script language="JavaScript" >
+
+function servicemode()
+{
+	var objvalue = document.getElementById("dslService");
+	//alert(objvalue.value);
+	if(objvalue.value == 1)  // RT 
+	{
+	 	document.getElementById("capliststyle_CO").style.display = 'none';
+	 	document.getElementById("capliststyle_RT").style.display = '';
+	 	document.getElementById("standard").style.display = 'none';
+	}
+	else if(objvalue.value == 2)  // CO 
+	{
+	 	//alert(objvalue.value);
+	 	document.getElementById("capliststyle_RT").style.display = 'none';
+	 	document.getElementById("capliststyle_CO").style.display = '';
+	 	document.getElementById("standard").style.display = '';
+	}
+	 
+	 extendchange();
+}
+
+function extendchange()
+{
+	var extendvalue = document.getElementById("extend");
+	var lineprobe = document.getElementById("lineprobe");
+	var service = document.getElementById("dslService");
+
+	if(extendvalue.value == 0)  
+	{
+		document.getElementById("extend_rate_fix").style.display = 'none';
+		//document.getElementById("extend_rate_auto").style.display = 'none';
+		document.getElementById("minrate_tr").style.display = '';
+		document.getElementById("maxrate_tr").style.display = '';
+	}
+	else if(extendvalue.value == 1)  
+	{
+		if(lineprobe.value == 0)
+		{
+			//alert("line probe disable");
+			if(service.value == 1)  // RT 
+			{
+				//alert("rt fix rate");
+				document.getElementById("extend_rate_fix").style.display = 'none';
+			}
+			/***/
+		  else
+			{
+				//alert("co fix rate");
+				document.getElementById("extend_rate_fix").style.display = '';
+			}
+						
+			//document.getElementById("extend_rate_auto").style.display = 'none';
+		}
+	  else
+	  {
+	  	//alert("line probe enable");
+	  	document.getElementById("extend_rate_fix").style.display = '';
+	  	//document.getElementById("extend_rate_fix").style.display = 'none';
+			//document.getElementById("extend_rate_auto").style.display = '';
+	  }
+	  	
+		document.getElementById("minrate_tr").style.display = 'none';
+		document.getElementById("maxrate_tr").style.display = 'none';
+  }
+}
+
+function dslinit() {
+
+/**/	
+	document.getElementById("dslService").value = @D09;	
+	
+	if(1 == 2)
+	{	
+		document.getElementById("caplist_co").value = 0;
+	}
+	else
+	{
+		document.getElementById("caplist_rt").value = 0;
+	}
+	
+	document.getElementById("dslWires").value = @D01;//3;
+	document.getElementById("dslStandard").value = @D02;//7;
+	document.getElementById("lineprobe").value = @D03;//1;
+	document.getElementById("extend").value = @D04;//0;
+	document.getElementById("extend_rate_fix_value").value = @D05;//0;
+	/*document.getElementById("extend_rate_auto").value = 0;*/
+	document.getElementById("minrate").value = @D06;//3;
+	document.getElementById("maxrate").value = @D07;
+	document.getElementById("dslmode").value = @D08;//13;
+	
+  servicemode();
+}
+
+</script>
+
+<body bgcolor="#ffffff" link="#3300cc" alink="#ff0000" vlink="#990066" ONLOAD="dslinit();">
+<form method=post action=/config >
+<br><br>
+<table width="80%" align=center>
+<tr>
+	<td colspan=3 class="h1">
+	<font face="Times New Roman">DSL Configuration</font>
+	</td>
+</tr>
+
+<tr>
+	<td class="titleb" >
+	<font face="Arial"><nobr>Service Type</nobr></font>
+	</td>
+ 	<td class="titleb"><nobr>
+  <select name="dslService" id="dslService" style="font-family: Arial" onchange="servicemode()">
+     <option value=1>RT</option>
+     <option value=2>CO</option>
+  </nobr></select>
+ </td>
+</tr>
+
+<tr id="capliststyle_CO">
+	<td class="titlea" >
+	<font face="Arial"><nobr>CapList Style</nobr></font>
+	</td>
+ 	<td class="titlea"><nobr>
+  <select name="caplist_co" id="caplist_co" style="font-family: Arial">
+     <option value=0>New_Style</option>
+     <option value=1>Old_Style</option>
+     </nobr></select>
+	</td>
+</tr>
+
+<tr id="capliststyle_RT">
+	<td class="titlea" >
+	<font face="Arial"><nobr>CapList Style</nobr></font>
+	</td>
+ 	<td class="titlea"><nobr>
+  <select name="caplist_rt" id="caplist_rt" style="font-family: Arial">
+     <option value=0>New_Style</option>
+     <option value=1>Old_Style</option>
+     <option value=2>Auto</option>
+     </nobr></select>
+	</td>
+</tr>
+
+<tr>
+	<td class="titleb" >
+	<font face="Arial"><nobr>Wire Mode</nobr></font>
+	</td>
+	<td class="titleb"><nobr>
+  <select name="dslWires" id="dslWires" style="font-family: Arial">
+    <option value=3>2wires</option>
+    <option value=4>4wires</option>
+    <option value=5>6wires</option>
+    <option value=6>8wires</option>
+    </nobr></select>
+	</td>
+</tr>
+
+<tr id="standard">
+	<td class="titlea" >
+	<font face="Arial"><nobr>Standard Type</nobr></font>
+	</td>
+	<td class="titlea"><nobr>
+  <select name="dslStandard" id="dslStandard" style="font-family: Arial">
+    <option value=7>ANNEX A (ANSI)</option>
+    <option value=8>ANNEX B (ETSI)</option>
+   </nobr></select> 
+	</td>
+</tr>
+
+<tr>
+	<td class="titleb" >
+	<font face="Arial"><nobr>Line Probe</nobr></font>
+	</td>
+	<td class="titleb" ><nobr>
+  <select name="lineprobe" id="lineprobe" style="font-family:Arial" onchange="extendchange()">
+    <option value=0>Disable</option>
+    <option value=1>Enable</option>
+    </nobr></select>
+	</td>
+</tr>
+
+<tr>
+	<td class="titlea" >
+	<font face="Arial"><nobr>Extend Mode</nobr></font>
+	</td>
+	<td class="titlea" ><nobr>
+  <select name="extend" id="extend" style="font-family:Arial" onchange="extendchange()">
+    <option value=0>Disable</option>
+    <option value=1>Enable</option>
+    </nobr></select>
+	</td>
+</tr>
+
+<tr id="extend_rate_fix">
+	<td class="titleb" >
+	<font face="Arial"><nobr>Extended Rate</nobr></font>
+	</td>
+	<td class="titleb">
+	<input  type="text" name=extend_rate_fix_value id=extend_rate_fix_value size=10 maxlength=4>*8kbps  (24~1875)
+	</td>
+</tr>
+<!--
+<tr id="extend_rate_auto">
+	<td class="titleb" >
+	<font face="Arial"><nobr>Extended Rate</nobr></font>
+	</td>
+	<td class="titleb">
+	<input  type="text" name=extend_rate_auto id=extend_rate_auto size=10 maxlength=4>*64kbps  (3~234)
+	</td>
+</tr>
+-->
+<tr name="minrate_tr" id="minrate_tr">
+	<td class="titlea" >
+	<font face="Arial"><nobr>Minimum Rate</nobr></font>
+	</td>
+	<td class="titlea" ><nobr>
+  <select name="minrate" id="minrate" style="font-family:Arial">
+    <option value=1 >64 Kbps</option>
+    <option value=2 >128 Kbps</option>
+    <option value=3 >192 Kbps</option>
+    <option value=4 >256 Kbps</option>
+    <option value=5 >320 Kbps</option>
+    <option value=6 >384 Kbps</option>
+    <option value=7 >448 Kbps</option>
+    <option value=8 >512 Kbps</option>
+    <option value=9 >576 Kbps</option>
+    <option value=10 >640 Kbps</option>
+    <option value=11 >704 Kbps</option>
+    <option value=12 >768 Kbps</option>
+    <option value=13 >832 Kbps</option>
+    <option value=14 >896 Kbps</option>
+    <option value=15 >960 Kbps</option>
+    <option value=16 >1024 Kbps</option>
+		<option value=17 >1088 Kbps</option>
+		<option value=18 >1152 Kbps</option>
+		<option value=19 >1216 Kbps</option>
+		<option value=20 >1280 Kbps</option>
+		<option value=21 >1344 Kbps</option>
+		<option value=22 >1408 Kbps</option>
+		<option value=23 >1472 Kbps</option>
+		<option value=24 >1536 Kbps</option>
+		<option value=25 >1600 Kbps</option>
+		<option value=26 >1664 Kbps</option>
+		<option value=27 >1728 Kbps</option>
+		<option value=28 >1792 Kbps</option>
+		<option value=29 >1856 Kbps</option>
+		<option value=30 >1920 Kbps</option>
+		<option value=31 >1984 Kbps</option>
+		<option value=32 >2048 Kbps</option>
+		<option value=33 >2112 Kbps</option>
+		<option value=34 >2176 Kbps</option>
+		<option value=35 >2240 Kbps</option>
+		<option value=36 >2304 Kbps</option>
+		<option value=37 >2368 Kbps</option>
+		<option value=38 >2432 Kbps</option>
+		<option value=39 >2496 Kbps</option>
+		<option value=40 >2560 Kbps</option>
+		<option value=41 >2624 Kbps</option>
+		<option value=42 >2688 Kbps</option>
+		<option value=43 >2752 Kbps</option>
+		<option value=44 >2816 Kbps</option>
+		<option value=45 >2880 Kbps</option>
+		<option value=46 >2944 Kbps</option>
+		<option value=47 >3008 Kbps</option>
+		<option value=48 >3072 Kbps</option>
+		<option value=49 >3136 Kbps</option>
+		<option value=50 >3200 Kbps</option>
+		<option value=51 >3264 Kbps</option>
+		<option value=52 >3328 Kbps</option>
+		<option value=53 >3392 Kbps</option>
+		<option value=54 >3456 Kbps</option>
+		<option value=55 >3520 Kbps</option>
+		<option value=56 >3584 Kbps</option>
+		<option value=57 >3648 Kbps</option>
+		<option value=58 >3712 Kbps</option>
+		<option value=59 >3776 Kbps</option>
+		<option value=60 >3840 Kbps</option>
+		<option value=61 >3904 Kbps</option>
+		<option value=62 >3968 Kbps</option>
+		<option value=63 >4032 Kbps</option>
+		<option value=64 >4096 Kbps</option>
+		<option value=65 >4160 Kbps</option>
+		<option value=66 >4224 Kbps</option>
+		<option value=67 >4288 Kbps</option>
+		<option value=68 >4352 Kbps</option>
+		<option value=69 >4416 Kbps</option>
+		<option value=70 >4480 Kbps</option>
+		<option value=71 >4544 Kbps</option>
+		<option value=72 >4608 Kbps</option>
+		<option value=73 >4672 Kbps</option>
+		<option value=74 >4736 Kbps</option>
+		<option value=75 >4800 Kbps</option>
+		<option value=76 >4864 Kbps</option>
+		<option value=78 >4992 Kbps</option>
+		<option value=79 >5056 Kbps</option>
+		<option value=80 >5120 Kbps</option>
+		<option value=81 >5184 Kbps</option>
+		<option value=82 >5248 Kbps</option>
+		<option value=83 >5312 Kbps</option>
+		<option value=84 >5376 Kbps</option>
+		<option value=85 >5440 Kbps</option>
+		<option value=86 >5504 Kbps</option>
+		<option value=87 >5568 Kbps</option>
+		<option value=88 >5632 Kbps</option>
+		<option value=89 >5696 Kbps</option>
+	</nobr></select>
+	</td>
+</tr>
+
+<tr name="maxrate_tr" id="maxrate_tr">
+	<td class="titleb" >
+	<font face="Arial"><nobr>Maximum Rate</nobr></font>
+	</td>
+	<td class="titleb" ><nobr>
+  <select name="maxrate" id="maxrate" style="font-family:Arial">
+    <option value=1 >64 Kbps</option>
+    <option value=2 >128 Kbps</option>
+    <option value=3 >192 Kbps</option>
+    <option value=4 >256 Kbps</option>
+    <option value=5 >320 Kbps</option>
+    <option value=6 >384 Kbps</option>
+    <option value=7 >448 Kbps</option>
+    <option value=8 >512 Kbps</option>
+    <option value=9 >576 Kbps</option>
+    <option value=10 >640 Kbps</option>
+    <option value=11 >704 Kbps</option>
+    <option value=12 >768 Kbps</option>
+    <option value=13 >832 Kbps</option>
+    <option value=14 >896 Kbps</option>
+    <option value=15 >960 Kbps</option>
+    <option value=16 >1024 Kbps</option>
+		<option value=17 >1088 Kbps</option>
+		<option value=18 >1152 Kbps</option>
+		<option value=19 >1216 Kbps</option>
+		<option value=20 >1280 Kbps</option>
+		<option value=21 >1344 Kbps</option>
+		<option value=22 >1408 Kbps</option>
+		<option value=23 >1472 Kbps</option>
+		<option value=24 >1536 Kbps</option>
+		<option value=25 >1600 Kbps</option>
+		<option value=26 >1664 Kbps</option>
+		<option value=27 >1728 Kbps</option>
+		<option value=28 >1792 Kbps</option>
+		<option value=29 >1856 Kbps</option>
+		<option value=30 >1920 Kbps</option>
+		<option value=31 >1984 Kbps</option>
+		<option value=32 >2048 Kbps</option>
+		<option value=33 >2112 Kbps</option>
+		<option value=34 >2176 Kbps</option>
+		<option value=35 >2240 Kbps</option>
+		<option value=36 >2304 Kbps</option>
+		<option value=37 >2368 Kbps</option>
+		<option value=38 >2432 Kbps</option>
+		<option value=39 >2496 Kbps</option>
+		<option value=40 >2560 Kbps</option>
+		<option value=41 >2624 Kbps</option>
+		<option value=42 >2688 Kbps</option>
+		<option value=43 >2752 Kbps</option>
+		<option value=44 >2816 Kbps</option>
+		<option value=45 >2880 Kbps</option>
+		<option value=46 >2944 Kbps</option>
+		<option value=47 >3008 Kbps</option>
+		<option value=48 >3072 Kbps</option>
+		<option value=49 >3136 Kbps</option>
+		<option value=50 >3200 Kbps</option>
+		<option value=51 >3264 Kbps</option>
+		<option value=52 >3328 Kbps</option>
+		<option value=53 >3392 Kbps</option>
+		<option value=54 >3456 Kbps</option>
+		<option value=55 >3520 Kbps</option>
+		<option value=56 >3584 Kbps</option>
+		<option value=57 >3648 Kbps</option>
+		<option value=58 >3712 Kbps</option>
+		<option value=59 >3776 Kbps</option>
+		<option value=60 >3840 Kbps</option>
+		<option value=61 >3904 Kbps</option>
+		<option value=62 >3968 Kbps</option>
+		<option value=63 >4032 Kbps</option>
+		<option value=64 >4096 Kbps</option>
+		<option value=65 >4160 Kbps</option>
+		<option value=66 >4224 Kbps</option>
+		<option value=67 >4288 Kbps</option>
+		<option value=68 >4352 Kbps</option>
+		<option value=69 >4416 Kbps</option>
+		<option value=70 >4480 Kbps</option>
+		<option value=71 >4544 Kbps</option>
+		<option value=72 >4608 Kbps</option>
+		<option value=73 >4672 Kbps</option>
+		<option value=74 >4736 Kbps</option>
+		<option value=75 >4800 Kbps</option>
+		<option value=76 >4864 Kbps</option>
+		<option value=77 >4928 Kbps</option>
+		<option value=78 >4992 Kbps</option>
+		<option value=79 >5056 Kbps</option>
+		<option value=80 >5120 Kbps</option>
+		<option value=81 >5184 Kbps</option>
+		<option value=82 >5248 Kbps</option>
+		<option value=83 >5312 Kbps</option>
+		<option value=84 >5376 Kbps</option>
+		<option value=85 >5440 Kbps</option>
+		<option value=86 >5504 Kbps</option>
+		<option value=87 >5568 Kbps</option>
+		<option value=88 >5632 Kbps</option>
+		<option value=89 >5696 Kbps</option>
+		</nobr></select>
+	</td>
+</tr>
+
+<tr>
+	<td class="titlea" >
+	<font face="Arial"><nobr>DSL Mode</nobr></font>
+	</td>
+	<td class="titlea" ><nobr>
+  <select name="dslmode" id="dslmode" style="font-family:Arial">
+	<option value=12>atm-mode</option>
+	<option value=13>efm-mode</option>
+	</nobr></select>
+	</td>
+</tr>
+
+<tr>
+	<td colspan=2><br>
+  <input type="submit" name="SUBMIT" value="Apply" style="float: left" style="font-family: Times New Roman; font-weight: bold" >
+  </td>
+</tr>
+
+</table>
+</form>
+</body>
+</html>

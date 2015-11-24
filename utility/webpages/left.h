@@ -4,7 +4,7 @@
 #ifndef LEFT_H_INC
 #define LEFT_H_INC
 
-#define LEFT_SIZE 1378
+#define LEFT_SIZE 2070
 
 extern const uchar  left_htm[LEFT_SIZE];
 
