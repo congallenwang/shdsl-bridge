@@ -18,7 +18,7 @@ void initconfig()
 
     g_config.lineprobe = 1;
 
-    g_config.extend = 88;
+    g_config.extend = 0;
     g_config.extend_rate_fix_value = 0;
 
     g_config.minrate=12;

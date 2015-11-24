@@ -4,7 +4,7 @@
 #ifndef TOP_H_INC
 #define TOP_H_INC
 
-#define TOP_SIZE 453
+#define TOP_SIZE 498
 
 extern const uchar  top_htm[TOP_SIZE];
 

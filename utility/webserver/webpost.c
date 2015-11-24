@@ -449,6 +449,12 @@ void web_dslconfig_func(struct httpd_state *hs)
         g_config.lineprobe = atoi(form_var);
         rt_kprintf("lineprobe:%d\n",g_config.lineprobe);
     }
+
+     if(find_form_var("extend"))
+    {
+        g_config.extend = atoi(form_var);
+        rt_kprintf("extend:%d\n",g_config.extend);
+    }
     
     if(find_form_var("extend_rate_fix_value"))
     {

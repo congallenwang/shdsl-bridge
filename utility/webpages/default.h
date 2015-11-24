@@ -4,7 +4,7 @@
 #ifndef DEFAULT_H_INC
 #define DEFAULT_H_INC
 
-#define DEFAULT_SIZE 8173
+#define DEFAULT_SIZE 348
 
 extern const uchar  default_css[DEFAULT_SIZE];
 

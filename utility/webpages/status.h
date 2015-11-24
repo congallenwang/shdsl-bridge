@@ -4,7 +4,7 @@
 #ifndef STATUS_H_INC
 #define STATUS_H_INC
 
-#define STATUS_SIZE 1152
+#define STATUS_SIZE 1117
 
 extern const uchar  status_htm[STATUS_SIZE];
 
