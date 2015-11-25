@@ -49,7 +49,7 @@ extern void uip_sys_init(void);
 char Vxy[]="beta v1.e";			
 
 
-
+/*
 static BOARD_Configuration_t DeviceConfiguration =
 {
    PEF24628E_IF_MPI,
@@ -59,7 +59,7 @@ static BOARD_Configuration_t DeviceConfiguration =
    PEF24628E_MAX_LINE_NUMBER,   
 };
 
-/*
+
 int usrApp(void)
 {
    int key;

@@ -508,6 +508,8 @@ RTM_EXPORT(rt_strdup);
 /**
  * This function will show the version of rt-thread rtos
  */
+
+
 void rt_show_version(void)
 {
     rt_kprintf("\n \\ | /\n");

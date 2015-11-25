@@ -170,6 +170,14 @@ void rt_burnapp(unsigned char* buf, unsigned int pos, unsigned char filetype)
 		//idc fw, start from 200k
 		else if(filetype==3)			
 			rt_device_write(g_spi,50+pos,buf,1);
+             //remedy file, satrt from 1.5M
+             else if(filetype==4)
+                    rt_device_write(g_spi,0x180+pos,buf,1);
+             //image information, locate at the last 4k block
+             else if(filetype==5)
+                    rt_device_write(g_spi,0x1ff+pos,buf,1);
+
+
 	}
 	return;
 }

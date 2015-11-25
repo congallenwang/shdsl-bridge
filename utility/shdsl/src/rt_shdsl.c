@@ -32,7 +32,8 @@ static char mb_pool[128];
 
 #define PRINTF rt_kprintf
 
-static BOARD_Configuration_t DeviceConfiguration =
+//int g_test = 100;
+BOARD_Configuration_t DeviceConfiguration =
 {
    PEF24628E_IF_MPI,
    FALSE,
@@ -52,6 +53,8 @@ unsigned char g_init_finished=0;
 
 uint8_t g_rcmode = 1;//0 for CO mode;1 for CPE mode
 uint8_t g_TCMode=1;//0 for atm mode;1 for EFM mode
+
+
 
 unsigned int g_maxbaserate = 0x0056EA00;
 unsigned int g_lineProbe = LP_ENABLE;
@@ -1285,8 +1288,18 @@ rt_err_t rt_shdsl_init()
 
 	device = 0;
 
-	rt_kprintf("try init shdsl device\r\n");
-	
+      nInterfaceMode = DeviceConfiguration.nInterfaceMode = PEF24628E_IF_MPI;
+      DeviceConfiguration.nSciClock = 4;
+      DeviceConfiguration.bPollingMode=FALSE;
+      DeviceConfiguration.nMaxDevNumber=PEF24628E_MAX_DEV_NUMBER;
+      DeviceConfiguration.nMaxLineNumber=PEF24628E_MAX_LINE_NUMBER,   
+  
+/*
+	rt_kprintf("try init shdsl device %d,%d,%d,%d,%d\r\n",DeviceConfiguration.nInterfaceMode,DeviceConfiguration.nSciClock,
+                                                                         DeviceConfiguration.bPollingMode,
+                                                                         DeviceConfiguration.nMaxDevNumber,
+                                                                         DeviceConfiguration.nMaxLineNumber);
+*/
 	g_pefdrv = rt_device_find("sh0");
 
 	if(g_pefdrv == RT_NULL)

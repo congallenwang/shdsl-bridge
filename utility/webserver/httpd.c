@@ -80,6 +80,14 @@ static const char content_filename_text []   = "filename=";
 #define NOT_IMPLEMENTED_501 2
 
 
+
+//allen
+typedef struct{
+    int flag;
+    int imgsize;
+}IMG_INFO;
+
+
 uchar boundary_buf [MAX_BOUNDARY_LEN];
 uchar body_buf [MAX_BODY_LEN + 4];
 uchar file_buff[4096];
@@ -88,6 +96,9 @@ int g_filelen;
 extern ulong upload_file_length;
 int g_totalpage;
 unsigned char g_filetype;
+
+
+IMG_INFO g_imginfo;
 
 void rt_burnapp(unsigned char* buf, unsigned int pos, unsigned char filetype);
 void save_file()
@@ -189,10 +200,17 @@ httpd_appcall(void)
 						file_buff[i++]=0xff;
 					rt_burnapp(file_buff,g_totalpage,g_filetype);
 			  }
-			  //save_file();
-
-			  //write config block
-		  }
+			  //write config block for app image
+			  if(1==g_filetype)
+			  {
+                               rt_kprintf("\r\nflash image information\r\n");		  
+                               g_imginfo.flag = 1;
+        			   g_imginfo.imgsize=g_totalpage*4096+upload_file_length;
+                               memset(file_buff,0xFF,4096);
+                               memcpy(file_buff,&g_imginfo,sizeof(g_imginfo));
+                               rt_burnapp(file_buff,0,5);
+			  }
+              }
                 /*
                 ** Find file/data to send
                 */
@@ -727,7 +745,14 @@ static void http_process (void)
                         	web_upload_init(hs->http.uri);
 			   	g_totalpage = 0;
 				g_filetype =3;
-			   }			   	
+			   }
+                        else if(strcmp(g_name,"remedy.bin") == 0)
+			   {
+			   	rt_kprintf("update remedy file\r\n");
+                        	web_upload_init(hs->http.uri);
+			   	g_totalpage = 0;
+				g_filetype =4;
+			   }
 			   else
 			   {
 			       rt_kprintf("file %s not recognized\r\n",g_name);

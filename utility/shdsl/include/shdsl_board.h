@@ -68,7 +68,7 @@ typedef struct
    /** device interface should be used */
    UINT32 nInterfaceMode;
    /** if set the polling mode instead of the interrupt mode is used */
-   BOOL   bPollingMode;
+   UINT32  bPollingMode;
    /** clock of the SCI interface, used for the HDLC driver */
    UINT32 nSciClock;
    /** maximum number of devices should be accessed */
