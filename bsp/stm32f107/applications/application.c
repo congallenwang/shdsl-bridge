@@ -145,7 +145,7 @@ void rt_init_thread_entry(void* parameter)
         rt_platform_init();
     }
 
-#if 1
+#if 0
 	rt_shdsl_register();
 	if(rt_shdsl_init() != RT_ERROR)
 		rt_shdsl_thread_init();
@@ -187,7 +187,7 @@ void rt_init_thread_entry(void* parameter)
 
 	
 	//allen, start the eth device
-	initconfig();
+	//initconfig();
 	rt_starteth();
 #endif
 

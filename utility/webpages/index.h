@@ -4,7 +4,7 @@
 #ifndef INDEX_H_INC
 #define INDEX_H_INC
 
-#define INDEX_SIZE 832
+#define INDEX_SIZE 835
 
 extern const uchar  index_htm[INDEX_SIZE];
 
