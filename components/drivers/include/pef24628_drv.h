@@ -25,7 +25,13 @@ struct rt_msg
 	unsigned int msg_id;
 	unsigned char linkno;
 	unsigned char state;
+       unsigned int datarate;
+       //snr margin
+       unsigned int snr_c;
+       unsigned int snr_n;
 };
+
+
 
 
 #endif 

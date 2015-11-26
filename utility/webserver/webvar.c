@@ -13,11 +13,15 @@
 #include "uip.h"
 #include <string.h> 
 #include "configmanage.h"
+#include "rt_shdsl.h"
+
 
 extern CONFIG_PARAM g_config;
 extern char Vxy[];
 extern uip_ipaddr_t uip_hostaddr, uip_netmask, uip_draddr;
 extern struct uip_eth_addr uip_ethaddr;
+
+extern LINE_STATUS g_lineStatus;
 
 #ifdef FILE_UPDOWN_LOAD
  extern ulong upload_file_length;
@@ -271,16 +275,22 @@ static ushort type_d_functions(uchar  *escape, char  *dst_ptr)
             break;         
 
 //////////////////below are status reading//////////////////////////////
+        //dsl SNR Margin
+        case 97:            
+            sprintf(dst_ptr,"SNR(Costumer)%d:SNR(Network)%d",g_lineStatus.snr_c,g_lineStatus.snr_n);
+            break;             
 
         //dsl link rate
         case 98:            
-            sprintf(dst_ptr,"%s","N/A");
+            sprintf(dst_ptr,"%d kbps",g_lineStatus.dateRate);
             break;             
-
 
         //dsl status
         case 99:            
-            sprintf(dst_ptr,"%s","Idle mode");
+            if(g_lineStatus.linkStatus ==3)
+                sprintf(dst_ptr,"%s","Activated");
+            else
+                sprintf(dst_ptr,"%s","Idle mode");
             break;             
  
         default :

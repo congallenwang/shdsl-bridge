@@ -15,6 +15,8 @@
 #include "shdsl_board.h"
 #include "finsh.h"
 
+#include "rt_shdsl.h"
+
 #define IDC_FW_OFFSET 0x32000
 #define IDC_FW_LEN 180308
 
@@ -59,6 +61,9 @@ uint8_t g_TCMode=1;//0 for atm mode;1 for EFM mode
 unsigned int g_maxbaserate = 0x0056EA00;
 unsigned int g_lineProbe = LP_ENABLE;
 unsigned int g_configed = 0;
+
+
+LINE_STATUS g_lineStatus;
 
 void rt_CO_init(UINT8 device);
 void rt_CPE_init(UINT8 device,UINT8 ch);
@@ -240,7 +245,7 @@ BOOL rt_pef24628_poll( UINT8 device, UINT16 idc_msg_id_expected )
 																				     p_Evt_pmd_linkstate->Reason);
 		if(g_init_finished)
 		{
-			p_msg = (struct rt_msg*)rt_malloc(sizeof(struct rt_msg*));			
+			p_msg = (struct rt_msg*)rt_malloc(sizeof(struct rt_msg));			
 			if(p_msg != RT_NULL)
 			{
 				p_msg->msg_id = EVT_PMD_LINKSTATE;
@@ -253,10 +258,21 @@ BOOL rt_pef24628_poll( UINT8 device, UINT16 idc_msg_id_expected )
 		break;
 
 	  case ACK_PMD_STATUSGET:
-	  		PRINTF("SOC4E[%02d]: ACK_PMD_STATUSGET(%x)\n\r", device,ACK_PMD_STATUSGET);
-			p_ack_pmd_status = (ACK_PMD_StatusGet_t*)(pBuf+4);
-			PRINTF("SOC4E[%02d]: LinkNo=0x%x,datarate=0x%x\n\r", device,p_ack_pmd_status->LinkNo,
-																						p_ack_pmd_status->DataRate);
+	  	PRINTF("SOC4E[%02d]: ACK_PMD_STATUSGET(%x)\n\r", device,ACK_PMD_STATUSGET);
+		p_ack_pmd_status = (ACK_PMD_StatusGet_t*)(pBuf+4);
+		PRINTF("SOC4E[%02d]: LinkNo=0x%x,datarate=0x%x\n\r", device,p_ack_pmd_status->LinkNo,
+																	p_ack_pmd_status->DataRate);
+              if(g_init_finished)
+		{
+			p_msg = (struct rt_msg*)rt_malloc(sizeof(struct rt_msg));			
+			if(p_msg != RT_NULL)
+			{
+				p_msg->msg_id = ACK_PMD_STATUSGET;
+				p_msg->linkno = p_ack_pmd_status->LinkNo;
+				p_msg->datarate = p_ack_pmd_status->DataRate;
+				rt_mb_send(&g_mb,(rt_uint32_t)p_msg);
+			}			
+		}
 		break;
 
 	  case ACK_PMD_PM_PARAMGET:
@@ -287,7 +303,19 @@ BOOL rt_pef24628_poll( UINT8 device, UINT16 idc_msg_id_expected )
 										p_ack_pmd_pm_parameget->Counter_15,
 										p_ack_pmd_pm_parameget->Counter_16,
 										p_ack_pmd_pm_parameget->Counter_17);
-	  	break;
+                     if(g_init_finished)
+        		{
+        			p_msg = (struct rt_msg*)rt_malloc(sizeof(struct rt_msg));			
+        			if(p_msg != RT_NULL)
+        			{
+        				p_msg->msg_id = ACK_PMD_PM_PARAMGET;
+        				p_msg->linkno = p_ack_pmd_pm_parameget->LinkNo;
+        				p_msg->snr_c= p_ack_pmd_pm_parameget->Counter_2;
+                                   p_msg->snr_n = p_ack_pmd_pm_parameget->Counter_10;
+        				rt_mb_send(&g_mb,(rt_uint32_t)p_msg);
+        			}			
+        		}
+              break;
 
 	  case EVT_EOC_LINKSTATE:
 		PRINTF("SOC4E[%02d]: EVT_EOC_LINKSTATE(%x)\n\r", device,EVT_EOC_LINKSTATE);
@@ -476,13 +504,14 @@ long rt_shdsl_cmd(unsigned int cmd)
 	struct CMD_LinkControl cmd_linkcontrol;
 	struct CMD_PMD_Control cmd_pmd_control;
 	struct CMD_PMD_Reset cmd_pmd_reset;
-	
+
+#if 0	
 	result = rt_mutex_take(&g_sh_lock, RT_WAITING_FOREVER);
 	if(result != RT_EOK)
 	{
 	    return 0;
 	}
-
+#endif
 	switch(cmd)
 	{	
 		//check data rate
@@ -520,10 +549,10 @@ long rt_shdsl_cmd(unsigned int cmd)
 		default:
 			break;
 	}
-
+#if 0
 	/* release lock */
 	rt_mutex_release(&g_sh_lock);
-
+#endif
 	return 0;
 }
 FINSH_FUNCTION_EXPORT(rt_shdsl_cmd, shdsl cli);
@@ -966,6 +995,8 @@ void rt_CPE_init(UINT8 device,UINT8 ch)
 	struct CMD_StatusPinsConfig cmd_statuspinconfig;
 	unsigned ret=0;
 	g_configed = 1;
+
+    g_init_finished=0;
 	
        rt_kprintf("call CPE_init\r\n");
 
@@ -1269,6 +1300,15 @@ void rt_CPE_init(UINT8 device,UINT8 ch)
 	//else
 	//	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_PMD_PM_PARAMGET send ok******************** \n\r\r\n"));
 	//WAIT(1);
+
+       //init line status
+       g_lineStatus.linkStatus = 0;
+       g_lineStatus.dateRate = 0;
+        g_lineStatus.snr_c = 0;
+        g_lineStatus.snr_n = 0;
+
+        g_init_finished=1;
+    
 	if(g_configed)
 		rt_kprintf("CPE config success\r\n");
 
@@ -1406,7 +1446,7 @@ rt_err_t rt_shdsl_init()
 		WAIT(10);      
 	}		  
 
-	g_init_finished = 1;
+	//g_init_finished = 1;
 	if(i<2000)
 		return RT_EOK;
 	else
@@ -1436,6 +1476,95 @@ void rt_shp_thread_entry(void* parameter)
 	rt_kprintf("quit shp thread\r\n");
 }
 
+rt_timer_t gt;
+struct rt_msg gmsg;
+
+void rt_checkSNR(void* p)
+{
+
+#if 0
+        CMD_PMD_PM_ParamGet_t cmd_pmd_pm_parameterget;
+        cmd_pmd_pm_parameterget.LinkNo = 0;
+        if(g_rcmode)
+            cmd_pmd_pm_parameterget.Unit_ID = STU_R_UNIT;
+        else
+            cmd_pmd_pm_parameterget.Unit_ID = STU_C_UNIT;	
+        rt_shdsl_send_idc_msg(0, CMD_PMD_PM_PARAMGET, &cmd_pmd_pm_parameterget, sizeof(cmd_pmd_pm_parameterget));
+#endif
+        rt_kprintf("rt_checksnr\r\n");
+        gmsg.msg_id = 100;
+        rt_mb_send(&g_mb,(rt_uint32_t)&gmsg);
+ }
+
+void rt_msgdispatch(struct rt_msg* pmsg)
+{
+    CMD_PMD_StatusGet_t cmd_pmd_statusget;
+    CMD_PMD_PM_ParamGet_t cmd_pmd_pm_parameterget;
+    
+    if(NULL == pmsg)
+        return;
+
+    switch(pmsg->msg_id)
+    {
+        //check SNR
+        case 100:    
+            cmd_pmd_pm_parameterget.LinkNo = 0;
+            if(g_rcmode)
+                cmd_pmd_pm_parameterget.Unit_ID = STU_R_UNIT;
+            else
+                cmd_pmd_pm_parameterget.Unit_ID = STU_C_UNIT;	
+            rt_shdsl_send_idc_msg(0, CMD_PMD_PM_PARAMGET, &cmd_pmd_pm_parameterget, sizeof(cmd_pmd_pm_parameterget));
+            rt_timer_delete(gt);
+            break;
+
+        case EVT_PMD_LINKSTATE:
+            rt_kprintf("Event: id:0x%x,linkno:%d,state:%d\r\n",pmsg->msg_id,pmsg->linkno,pmsg->state);
+            //reach link status, check link speed
+            if(UP_DATA_MODE==pmsg->state)
+            {
+              	cmd_pmd_statusget.LinkNo = 0;
+			rt_shdsl_send_idc_msg(0, CMD_PMD_STATUSGET, &cmd_pmd_statusget, sizeof(cmd_pmd_statusget));
+            }                    
+            else
+            {
+                //update line status   
+                g_lineStatus.dateRate= 0;
+                g_lineStatus.linkStatus = 0;
+                g_lineStatus.snr_c = 0;
+                g_lineStatus.snr_n = 0;
+            }
+            break;
+
+        case ACK_PMD_STATUSGET:
+            rt_kprintf("Event: id:0x%x,linkno:%d,datarate:%d\r\n",pmsg->msg_id,pmsg->linkno,pmsg->datarate);
+            if(pmsg->datarate != 0 && pmsg->datarate<6000)
+            {
+                //update line status:
+                g_lineStatus.dateRate=pmsg->datarate;
+                g_lineStatus.linkStatus = UP_DATA_MODE;
+                
+                //update SNR margin timer
+                gt=rt_timer_create("t1",rt_checkSNR,RT_NULL,500,RT_TIMER_FLAG_ONE_SHOT);
+                rt_timer_start(gt);
+            }
+            break;
+
+        //snr margin
+    	 case ACK_PMD_PM_PARAMGET:     
+             rt_kprintf("Event: id:0x%x,linkno:%d,snr_c:%d,snr_n:%d\r\n",pmsg->msg_id,pmsg->linkno,
+                                                                                                            pmsg->snr_c,
+                                                                                                            pmsg->snr_n); 
+             //update line status:
+             g_lineStatus.snr_c = pmsg->snr_c;
+             g_lineStatus.snr_n = pmsg->snr_n;
+             break;
+             
+        default:
+            rt_kprintf("unknow msg ID\r\n",pmsg->msg_id);
+            break;
+    }
+}
+
 //state matchine
 void rt_shs_thread_entry(void* parameter)
 {
@@ -1454,8 +1583,10 @@ void rt_shs_thread_entry(void* parameter)
 	{
 		if(rt_mb_recv(&g_mb,(rt_uint32_t*)&p_msg,RT_WAITING_FOREVER) == RT_EOK)
 		{
-			rt_kprintf("id:0x%x,linkno:%d,state:%d\r\n",p_msg->msg_id,p_msg->linkno,p_msg->state);
-			rt_free(p_msg);
+	              rt_msgdispatch(p_msg);		
+                     //wait for change 
+                     if(p_msg->msg_id!=100)
+                         rt_free(p_msg);
 		}
 		rt_thread_sleep(10);
 		//delay(20);
