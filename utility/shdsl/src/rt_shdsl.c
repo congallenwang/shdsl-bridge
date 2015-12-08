@@ -65,6 +65,9 @@ unsigned int g_configed = 0;
 
 LINE_STATUS g_lineStatus;
 
+//dump flag
+unsigned int g_pefdump=0;
+
 void rt_CO_init(UINT8 device);
 void rt_CPE_init(UINT8 device,UINT8 ch);
 
@@ -567,14 +570,24 @@ long rt_set_baserate(unsigned int rate)
 FINSH_FUNCTION_EXPORT(rt_set_baserate, shdsl set baserate);
 
 
-long rt_set_lineprobe(unsigned int value)
+long rt_set_lp(unsigned int value)
 {
 	g_lineProbe = value;
 		rt_kprintf("g_lineProbe set to %d\r\n",g_lineProbe);
 
 	return 0;
 }
-FINSH_FUNCTION_EXPORT(rt_set_lineprobe, shdsl set lineprobe);
+FINSH_FUNCTION_EXPORT(rt_set_lp, shdsl set lineprobe);
+
+
+long rt_set_dump(unsigned int value)
+{
+	g_pefdump = value;
+		rt_kprintf("g_lineProbe set to %d\r\n",g_pefdump);
+
+	return 0;
+}
+FINSH_FUNCTION_EXPORT(rt_set_dump, shdsl set pef driver dump);
 
 
 long rt_get_config(void)
@@ -584,6 +597,7 @@ long rt_get_config(void)
 	rt_kprintf("g_lineProbe : %d\r\n",g_lineProbe);
 	rt_kprintf("g_maxbaserate : %d\r\n",g_maxbaserate);
 	rt_kprintf("g_configed : %d\r\n",g_configed);
+       rt_kprintf("g_pefdump : %d\r\n",g_pefdump);     
 
 	return 0;
 }
@@ -611,111 +625,17 @@ void rt_shdsl_register()
 	rt_mb_init(&g_mb,"shm",mb_pool,128/4,RT_IPC_FLAG_FIFO);
 
 }
-
-void rt_CO_init(UINT8 device)
+void rt_CO_ATM_init(UINT8 device)
 {
-	struct CMD_TC_FlowModify cmd_tc_flowmodify;
-	struct CMD_PMD_Reset cmd_pmd_reset;
-	struct CMD_ATM_TC_LinkModify cmd_atm_tc_linkmodify;
-	struct CMD_PMD_SpanProfileGroupConfig cmd_pmd_spanprofilegroupconfig;
-	struct CMD_IOP_Mode cmd_iop_mode;
-	struct CMD_PMD_SM_Control cmd_pmd_sm_control;
-	struct CMD_PMD_AlarmControl cmd_pmd_alarmcontrol;	
-	struct CMD_EOC_StatusRequestControl cmd_eoc_statusrequestcontrol;
-	struct CMD_LinkControl cmd_linkcontrol;
-	struct CMD_PMD_Control cmd_pmd_control;
-	struct CMD_EOC_Control cmd_eoc_control;
-	struct CMD_PMD_EndpointAlarmConfig cmd_pmd_endpointalarmconfig;
-	struct CMD_PMD_StatusGet cmd_pmd_statusget;
-	struct CMD_PMD_PM_ParamGet cmd_pmd_pm_paramget;
-	struct CMD_PMD_CO_PortSubTypeSelect cmd_pmd_co_portsubtypeselect;
-	struct CMD_SegmentationReassemblyConfig cmd_segmentationreassemblyconfig;
+       unsigned char ret;
+
+    	struct CMD_ATM_TC_LinkModify cmd_atm_tc_linkmodify;
+      	struct CMD_SegmentationReassemblyConfig cmd_segmentationreassemblyconfig;
 	struct CMD_Segmentation_VCC_Config cmd_segmentation_vcc_config;
 	struct CMD_SegmentationClassFilterConfig cmd_segmentationclassfilterconfig;
-	struct CMD_ReassemblyClassFilterConfig cmd_reassemblyclassfilterconfig;
-	struct CMD_xMII_Modify cmd_xmiimodify;
-	struct CMD_StatusPinsConfig cmd_statuspinconfig;
-	unsigned char ret = 0;
-	g_configed = 0;
-	
-       rt_kprintf("call CO_init\r\n");
+	struct CMD_ReassemblyClassFilterConfig cmd_reassemblyclassfilterconfig; 
 
-	//config LED
-	cmd_statuspinconfig.Mode=STU_C_UNIT;
-	//rt_kprintf("**********************CMD_STATUSPINSCONFIG********************\r\n");
-	if (rt_shdsl_send_idc_msg(device, CMD_STATUSPINSCONFIG, &cmd_statuspinconfig, sizeof(cmd_statuspinconfig)) == FALSE)
-    {
-    	ret = 1;
-      	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
-	}
-	//else
-	 	//TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_STATUSPINSCONFIG send ok******************** \n\r\r\n"));
-    //WAIT(5000);
-	
-	//=================================================
-	//Configure xMII interface, only need do one time after fw download. CMD_xMII_Modify.
-	cmd_xmiimodify.LinkNo = 0x0;   
-	cmd_xmiimodify.Speed = 0x01;//MII_100BT
-	cmd_xmiimodify.Duplex = 0x01;//FULL_DUPLEX
-	cmd_xmiimodify.SMII_SyncMode = 0x0;//NORMAL
-	cmd_xmiimodify.AltCollision = 0x1;//enable
-	cmd_xmiimodify.RxDuringTx = 0x1;//enable
-	cmd_xmiimodify.CollisionType = 0x0;//COL_TYPE
-	cmd_xmiimodify.DiBitMode = 0x0;//DIBIT_POS_1
-	//rt_kprintf("**********************CMD_XMII_MODIFY********************\r\n");
-	if (rt_shdsl_send_idc_msg(device, CMD_XMII_MODIFY, &cmd_xmiimodify, sizeof(cmd_xmiimodify)) == FALSE)
-    {
-    	ret = 1;
-      	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
-	}
-	//else
-	 	//TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_XMII_MODIFY send ok******************** \n\r\r\n"));
-    //WAIT(5000);
-
-       if(g_TCMode ==0)
-       {
-		cmd_tc_flowmodify.Link0_TC = 0x03; //only configure the target channel(or channels in bonding group) to ATM TC, other channels left to be SAME_TC_LAYER.
-		cmd_tc_flowmodify.Link1_TC = 0x03;
-		cmd_tc_flowmodify.Link2_TC = 0x03;
-		cmd_tc_flowmodify.Link3_TC = 0x03;
-
-	}
-	else
-	{
-		cmd_tc_flowmodify.Link0_TC = 0x01; //ÿefm mode
-		cmd_tc_flowmodify.Link1_TC = 0x01;
-		cmd_tc_flowmodify.Link2_TC = 0x01;
-		cmd_tc_flowmodify.Link3_TC = 0x01;
-
-	}
-	//cmd_tc_flowmodify.Link2_TC = 0x07;
-	//cmd_tc_flowmodify.Link3_TC = 0x07;
-
-	//rt_kprintf("**********************CMD_TC_FlowModify********************\r\n");
-	if (rt_shdsl_send_idc_msg(device, CMD_TC_FLOWMODIFY, &cmd_tc_flowmodify, sizeof(cmd_tc_flowmodify)) == FALSE)
-    {
-    	ret = 1;
-      	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
-	}
-	//else
-	 // 	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_TC_FlowModify  send ok******************** \n\r\r\n"));
-    //WAIT(5000);
-
-	
-	//cmd_pmd_reset.LinkNo = 0x00000000;      //do this to all channels in a bonding group. Now all the channels are not bonded.	
-	rt_kprintf("**********************CMD_PMD_RESET********************\r\n");
-	if (rt_shdsl_send_idc_msg(device, CMD_PMD_RESET, &cmd_pmd_reset, sizeof(cmd_pmd_reset)) == FALSE)
-    {
-    	ret = 1;
-      	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
-	}
-	//else
-	  	//TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_PMD_RESET send ok******************** \n\r\r\n"));
-    //WAIT(5000);
-
- if(g_TCMode ==0)
- {
-	cmd_atm_tc_linkmodify.LinkNo = 0x00000000;					//only confiugre the master channel.
+       cmd_atm_tc_linkmodify.LinkNo = 0x00000000;					//only confiugre the master channel.
 	cmd_atm_tc_linkmodify.IMA_Mode = 0x00000000;
 	cmd_atm_tc_linkmodify.RX_HEC_Ow = 0x00000000;
 	cmd_atm_tc_linkmodify.RX_HEC_Byte = 0x00000000;
@@ -745,18 +665,6 @@ void rt_CO_init(UINT8 device)
 	//else
 		//TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_ATM_TC_LINKMODIFY send ok******************** \n\r\r\n"));
 	//WAIT(5000);
- }
-
-    /* FIX ME
-    	Configure SAR/AAL5 here,
-	CMD_SegmentationReassemblyConfig
-	CMD_Segmentation_VCC_Config
-	CMD_SegmentationClassFilterConfig
-	CMD_ReassemblyClassFilterConfig
-       */
-       // SAR AAL5 configuration , interworking EFM <---> Utopia
- if(g_TCMode ==0)
- {       
 	cmd_segmentationreassemblyconfig.LinkNo = 0x00000000; 
 	cmd_segmentationreassemblyconfig.CPCS_Protocol = 0x00000001; 
 	cmd_segmentationreassemblyconfig.FCS_Present = 0x00000000; 
@@ -792,7 +700,6 @@ void rt_CO_init(UINT8 device)
 	//else
 		//TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_SEGMENTATION_VCC_CONFIG send ok******************** \n\r\r\n"));
 	//WAIT(5000);
-	 
 
 	cmd_segmentationclassfilterconfig.LinkNo = 0x00000000; 
 	cmd_segmentationclassfilterconfig.MAC_Address_1 = 0x00000000; 
@@ -805,7 +712,7 @@ void rt_CO_init(UINT8 device)
 	//rt_kprintf("**********************CMD_SEGMENTATIONCLASSFILTERCONFIG********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_SEGMENTATIONCLASSFILTERCONFIG, &cmd_segmentationclassfilterconfig, sizeof(cmd_segmentationclassfilterconfig)) == FALSE)
 	{
-	ret = 1;
+	       ret = 1;
 		TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
 	}
 	//else
@@ -819,7 +726,7 @@ void rt_CO_init(UINT8 device)
 	//rt_kprintf("**********************CMD_REASSEMBLYCLASSFILTERCONFIG********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_REASSEMBLYCLASSFILTERCONFIG, &cmd_reassemblyclassfilterconfig, sizeof(cmd_reassemblyclassfilterconfig)) == FALSE)
 	{
-	ret = 1;
+	       ret = 1;
 		TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
 	}
 	//else
@@ -827,13 +734,117 @@ void rt_CO_init(UINT8 device)
 	//WAIT(5000);
 
     //AAL5 config finished
- }
+}
+
+
+void rt_CO_init(UINT8 device)
+{
+	struct CMD_TC_FlowModify cmd_tc_flowmodify;
+	struct CMD_PMD_Reset cmd_pmd_reset;
+
+	struct CMD_PMD_SpanProfileGroupConfig cmd_pmd_spanprofilegroupconfig;
+	struct CMD_IOP_Mode cmd_iop_mode;
+	struct CMD_PMD_SM_Control cmd_pmd_sm_control;
+	struct CMD_PMD_AlarmControl cmd_pmd_alarmcontrol;	
+	struct CMD_EOC_StatusRequestControl cmd_eoc_statusrequestcontrol;
+	struct CMD_LinkControl cmd_linkcontrol;
+	struct CMD_PMD_Control cmd_pmd_control;
+	struct CMD_EOC_Control cmd_eoc_control;
+	struct CMD_PMD_EndpointAlarmConfig cmd_pmd_endpointalarmconfig;
+	struct CMD_PMD_StatusGet cmd_pmd_statusget;
+	struct CMD_PMD_PM_ParamGet cmd_pmd_pm_paramget;
+	struct CMD_PMD_CO_PortSubTypeSelect cmd_pmd_co_portsubtypeselect;
+
+	struct CMD_xMII_Modify cmd_xmiimodify;
+	struct CMD_StatusPinsConfig cmd_statuspinconfig;
+	unsigned char ret = 0;
+	g_configed = 0;
+	
+       rt_kprintf("call CO_init\r\n");
+
+	//config LED
+	cmd_statuspinconfig.Mode=STU_C_UNIT;
+	rt_kprintf("**********************CMD_STATUSPINSCONFIG********************\r\n");
+	if (rt_shdsl_send_idc_msg(device, CMD_STATUSPINSCONFIG, &cmd_statuspinconfig, sizeof(cmd_statuspinconfig)) == FALSE)
+    {
+    	ret = 1;
+      	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
+	}
+	//else
+	 	//TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_STATUSPINSCONFIG send ok******************** \n\r\r\n"));
+    //WAIT(5000);
+	
+	//=================================================
+	//Configure xMII interface, only need do one time after fw download. CMD_xMII_Modify.
+	cmd_xmiimodify.LinkNo = 0x0;   
+	cmd_xmiimodify.Speed = 0x01;//MII_100BT
+	cmd_xmiimodify.Duplex = 0x01;//FULL_DUPLEX
+	cmd_xmiimodify.SMII_SyncMode = 0x0;//NORMAL
+	cmd_xmiimodify.AltCollision = 0x1;//enable
+	cmd_xmiimodify.RxDuringTx = 0x1;//enable
+	cmd_xmiimodify.CollisionType = 0x0;//COL_TYPE
+	cmd_xmiimodify.DiBitMode = 0x0;//DIBIT_POS_1
+	rt_kprintf("**********************CMD_XMII_MODIFY********************\r\n");
+	if (rt_shdsl_send_idc_msg(device, CMD_XMII_MODIFY, &cmd_xmiimodify, sizeof(cmd_xmiimodify)) == FALSE)
+    {
+    	ret = 1;
+      	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
+	}
+	//else
+	 	//TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_XMII_MODIFY send ok******************** \n\r\r\n"));
+    //WAIT(5000);
+
+       if(g_TCMode ==0)
+       {
+		cmd_tc_flowmodify.Link0_TC = 0x03; //only configure the target channel(or channels in bonding group) to ATM TC, other channels left to be SAME_TC_LAYER.
+		cmd_tc_flowmodify.Link1_TC = 0x03;
+		cmd_tc_flowmodify.Link2_TC = 0x03;
+		cmd_tc_flowmodify.Link3_TC = 0x03;
+
+	}
+	else
+	{
+		cmd_tc_flowmodify.Link0_TC = 0x01; //ÿefm mode
+		cmd_tc_flowmodify.Link1_TC = 0x01;
+		cmd_tc_flowmodify.Link2_TC = 0x01;
+		cmd_tc_flowmodify.Link3_TC = 0x01;
+
+	}
+	//cmd_tc_flowmodify.Link2_TC = 0x07;
+	//cmd_tc_flowmodify.Link3_TC = 0x07;
+
+	rt_kprintf("**********************CMD_TC_FlowModify********************\r\n");
+     if (rt_shdsl_send_idc_msg(device, CMD_TC_FLOWMODIFY, &cmd_tc_flowmodify, sizeof(cmd_tc_flowmodify)) == FALSE)
+    {
+    	ret = 1;
+      	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
+    }
+	//else
+	 // 	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_TC_FlowModify  send ok******************** \n\r\r\n"));
+    //WAIT(5000);
+
+	
+	cmd_pmd_reset.LinkNo = 0x00000000;      //do this to all channels in a bonding group. Now all the channels are not bonded.	
+	rt_kprintf("**********************CMD_PMD_RESET********************\r\n");
+	if (rt_shdsl_send_idc_msg(device, CMD_PMD_RESET, &cmd_pmd_reset, sizeof(cmd_pmd_reset)) == FALSE)
+    {
+    	ret = 1;
+      	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
+	}
+	//else
+	  	//TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_PMD_RESET send ok******************** \n\r\r\n"));
+    //WAIT(5000);
+
+      if(g_TCMode ==0)
+      {
+            rt_CO_ATM_init(device);	
+      }
 
 	cmd_pmd_co_portsubtypeselect.LinkNo = 0x00000000;		//only do this to master channel	
-	//rt_kprintf("**********************CMD_PMD_CO_PORTSUBTYPESELECT********************\r\n");
+	rt_kprintf("**********************CMD_PMD_CO_PORTSUBTYPESELECT********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_PMD_CO_PORTSUBTYPESELECT, &cmd_pmd_co_portsubtypeselect, sizeof(cmd_pmd_co_portsubtypeselect)) == FALSE)
 	{
-	ret = 1;
+	       ret = 1;
 		TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("rt_shdsl_send_idc_msg() failed ...reset \n\r"));
 	}
 	//else
@@ -864,7 +875,7 @@ void rt_CO_init(UINT8 device)
 	cmd_pmd_spanprofilegroupconfig.PBO_Mode = 0x00000000;
 	cmd_pmd_spanprofilegroupconfig.EPL_Mode = 0x00000008;
 	cmd_pmd_spanprofilegroupconfig.PBO_Value = 0x00000000;
-    	//rt_kprintf("**********************CMD_PMD_SPANPROFILEGROUPCONFIG********************\r\n");
+    	rt_kprintf("**********************CMD_PMD_SPANPROFILEGROUPCONFIG********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_PMD_SPANPROFILEGROUPCONFIG, &cmd_pmd_spanprofilegroupconfig, sizeof(cmd_pmd_spanprofilegroupconfig)) == FALSE)
 	{
 	ret = 1;
@@ -873,8 +884,7 @@ void rt_CO_init(UINT8 device)
 	//else
 	//	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_PMD_SPANPROFILEGROUPCONFIG send ok******************** \n\r\r\n"));
 	//WAIT(5000);
-	//rt_kprintf("CMD_PMD_SpanProfileGroupConfig\n");
-	
+	//rt_kprintf("CMD_PMD_SpanProfileGroupConfig\n");	
 
  
 	cmd_iop_mode.LinkNo = 0x00000000;					//send to all channels in a bonding group
@@ -884,7 +894,7 @@ void rt_CO_init(UINT8 device)
 	cmd_iop_mode.PHY_Res_1 = 0x00000000;
 	cmd_iop_mode.IDC_IOP_Mode = 0x00000000;
 	cmd_iop_mode.IDC_Res_1 = 0x00000000;    
-	//rt_kprintf("**********************CMD_IOP_MODE********************\r\n");
+	rt_kprintf("**********************CMD_IOP_MODE********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_IOP_MODE, &cmd_iop_mode, sizeof(cmd_iop_mode)) == FALSE)
 	{
 	ret = 1;
@@ -899,7 +909,7 @@ void rt_CO_init(UINT8 device)
 	cmd_pmd_sm_control.Control = 0x00000001;
 	cmd_pmd_sm_control.NFC_Forwarding = 0x00000000;
 	cmd_pmd_sm_control.ForceTraining = 0x00000001;
-    	//rt_kprintf("**********************CMD_PMD_SM_CONTROL********************\r\n");
+    	rt_kprintf("**********************CMD_PMD_SM_CONTROL********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_PMD_SM_CONTROL, &cmd_pmd_sm_control, sizeof(cmd_pmd_sm_control)) == FALSE)
 	{
 	ret = 1;
@@ -912,7 +922,7 @@ void rt_CO_init(UINT8 device)
 	
 	cmd_pmd_alarmcontrol.LinkNo = 0x00000000;			  //send to all channels in a bonding group
 	cmd_pmd_alarmcontrol.Mask = 0x000000FE;
-   	// rt_kprintf("**********************CMD_PMD_ALARMCONTROL********************\r\n");
+   	rt_kprintf("**********************CMD_PMD_ALARMCONTROL********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_PMD_ALARMCONTROL, &cmd_pmd_alarmcontrol, sizeof(cmd_pmd_alarmcontrol)) == FALSE)
 	{
 	ret = 1;
@@ -926,7 +936,7 @@ void rt_CO_init(UINT8 device)
 	cmd_eoc_statusrequestcontrol.LinkNo = 0x00000000;					//send to all channels in a bonding group
 	cmd_eoc_statusrequestcontrol.StatusPeriod = 0x00000014;
 	cmd_eoc_statusrequestcontrol.ATM_StatusPeriod = 0x00000064;
-    	//rt_kprintf("**********************CMD_EOC_STATUSREQUESTCONTROL********************\r\n");
+    	rt_kprintf("**********************CMD_EOC_STATUSREQUESTCONTROL********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_EOC_STATUSREQUESTCONTROL, &cmd_eoc_statusrequestcontrol, sizeof(cmd_eoc_statusrequestcontrol)) == FALSE)
 	{
 	ret = 1;
@@ -941,7 +951,7 @@ void rt_CO_init(UINT8 device)
 	cmd_linkcontrol.LinkNo = 0x00000000;					   //send to only master channel
 	cmd_linkcontrol.TX_Mode = 0x00000001;
 	cmd_linkcontrol.RX_Mode = 0x00000001;
-   	// rt_kprintf("**********************CMD_LINKCONTROL********************\r\n");
+   	rt_kprintf("**********************CMD_LINKCONTROL********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_LINKCONTROL, &cmd_linkcontrol, sizeof(cmd_linkcontrol)) == FALSE)
 	{
 	ret = 1;
@@ -955,7 +965,7 @@ void rt_CO_init(UINT8 device)
 	cmd_pmd_control.LinkNo = 0x00000000;			  //only do this to master channel
 	cmd_pmd_control.LinkControl = 0x00000001;
 	cmd_pmd_control.ActivationState = START_AFTER_INIT;
-	//rt_kprintf("**********************CMD_PMD_CONTROL********************\r\n");
+	rt_kprintf("**********************CMD_PMD_CONTROL********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_PMD_CONTROL, &cmd_pmd_control, sizeof(cmd_pmd_control)) == FALSE)
 	{
 		ret = 1;
@@ -1188,7 +1198,7 @@ void rt_CPE_init(UINT8 device,UINT8 ch)
 	//cmd_pmd_spanprofilegroupconfig.LineProbe = 0x00000002;
 	cmd_pmd_spanprofilegroupconfig.LineProbe = g_lineProbe;
 	cmd_pmd_spanprofilegroupconfig.PAM_Constellation = 0x00000000;
-	cmd_pmd_spanprofilegroupconfig.CapListStyle = 0x00000002;
+	cmd_pmd_spanprofilegroupconfig.CapListStyle = 0x00000000;
 	cmd_pmd_spanprofilegroupconfig.PBO_Mode = 0x00000000;
 	cmd_pmd_spanprofilegroupconfig.EPL_Mode = 0x00000008;
 	cmd_pmd_spanprofilegroupconfig.PBO_Value = 0x00000000;
@@ -1423,9 +1433,9 @@ rt_err_t rt_shdsl_init()
 
 /*******************************check for firmware ok message**********************************************************/
     WAIT(30);
-	rt_kprintf("*********************************wait for firmware bring up**************************\r\n");
+	rt_kprintf("**********1***********************wait for firmware bring up**************************\r\n");
 
-	for(i=0;i<2000;i++)
+	for(i=0;i<50;i++)
 	{
 		for (device=0; device<DeviceConfiguration.nMaxDevNumber; device++)
 		{
@@ -1447,7 +1457,8 @@ rt_err_t rt_shdsl_init()
 	}		  
 
 	//g_init_finished = 1;
-	if(i<2000)
+       rt_kprintf("i=%d\r\n",i);
+	if(i<50)
 		return RT_EOK;
 	else
 		return RT_ERROR;

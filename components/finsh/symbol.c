@@ -43,7 +43,7 @@ long list_timer(void);
 void phy_dump(int addr);
 long rt_shdsl_cmd(unsigned int cmd);
 long rt_set_baserate(unsigned int rate);
-long rt_set_lineprobe(unsigned int value);
+long rt_set_lp(unsigned int value);
 long rt_get_config(void);
 
 #ifdef FINSH_USING_SYMTAB
@@ -84,7 +84,7 @@ struct finsh_syscall _syscall_table[] =
 	{"phy_dump",phy_dump},
 	{"sh_cli",rt_shdsl_cmd},
 	{"sh_setrate",rt_set_baserate},
-	{"sh_setlineprobe",rt_set_lineprobe},
+	{"sh_setlineprobe",rt_set_lp},
 	{"sh_get",rt_get_config},
 };
 struct finsh_syscall *_syscall_table_begin = &_syscall_table[0];

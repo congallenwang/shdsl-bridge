@@ -1922,15 +1922,18 @@ LOCAL IFX_int32_t Pef24628e_Get_SCC_Msg ( PEF24628E_DEV_t * pDev, IFX_void_t * p
 */
 void dump_reg(PEF24628E_DEV_t * pDev);
 
+extern unsigned int g_pefdump;
+
 IFX_int32_t Pef24628e_Send_IDC_Msg ( PEF24628E_DEV_t * pDev, const IFX_uint8_t * pSrc,
                                      IFX_int32_t nLength )
 {
    int repetitions = 0;
 #ifdef INCLUDE_MPI
-   IFX_int32_t i;
+   IFX_int32_t i,j;
 #endif
-#if 0
-   char msg_dump_buf[PEF24628E_MSG_SIZE*3 + 1];
+#if 1
+   //char msg_dump_buf[PEF24628E_MSG_SIZE*3 + 1];
+   char msg_dump_buf[5];
 #endif
    if ( nLength == 0 )
       return ( -1 );
@@ -1939,8 +1942,10 @@ IFX_int32_t Pef24628e_Send_IDC_Msg ( PEF24628E_DEV_t * pDev, const IFX_uint8_t *
    if ( !pDev->bInit )
       return ( -1 );
 
+#if 0
    TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW,
            ( PREFIX "Pef24628e_Send_IDC_Msg(%d)\n\r", ( int ) nLength ) );
+#endif
 
    /* message must fit completly into the buffer */
    if ( nLength > PEF24628E_MSG_SIZE )
@@ -1966,15 +1971,35 @@ IFX_int32_t Pef24628e_Send_IDC_Msg ( PEF24628E_DEV_t * pDev, const IFX_uint8_t *
       memcpy ( ( void * ) pDev->TxFifo.pData, ( void * ) pSrc, ( IFX_uint32_t ) nLength );
    }
 
-#if 0
+#if 1
+if(g_pefdump)
+{
    TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW,
            ( PREFIX "Pef24628e_Send_IDC_Msg(%d): \n\r", ( int ) nLength ) );
    /* Dump IDC message */
+#if 0
    for ( i = 0; i < nLength; i++ )
    {
       sprintf(&msg_dump_buf[i*3], "%02X ", pDev->TxFifo.pData[i]);
    }
    TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "%s\n\r", msg_dump_buf) );
+#else
+   TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "[00]:") );   
+   for ( i = 0; i < nLength; i++ )
+   {
+      sprintf(&msg_dump_buf[0], "%02X ", pDev->TxFifo.pData[i]);
+      msg_dump_buf[4]=0x0;
+      TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "%s", msg_dump_buf) );
+      if(i%16==15)
+      {
+        TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "\r\n") );  
+        if(i<nLength-1)
+            TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "[%02X]:",16*(i/16+1)) );   
+      }
+   }
+   TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "\r\n") );  
+#endif
+}
 #endif
 
 #ifdef INCLUDE_SCC_HDLC
@@ -2156,7 +2181,8 @@ IFX_int32_t Pef24628e_Get_IDC_Msg ( PEF24628E_DEV_t * pDev, IFX_uint8_t * pDst,
    IFX_uint16_t nBytes = 0;
 #if 1
    IFX_uint16_t i;
-   char msg_dump_buf[PEF24628E_MSG_SIZE*3 + 1];
+   //char msg_dump_buf[PEF24628E_MSG_SIZE*3 + 1];
+   char msg_dump_buf[5];
 #endif
 
    //rt_kprintf("try read2\r\n");	
@@ -2174,12 +2200,32 @@ IFX_int32_t Pef24628e_Get_IDC_Msg ( PEF24628E_DEV_t * pDev, IFX_uint8_t * pDst,
    {
       nBytes = pDev->pRxFifoRead->nBytes;
 //allen
-#if 0
+#if 1
+if(g_pefdump)
+{
       TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, 
          ( PREFIX "Pef24628e_Get_IDC_Msg[%02d] %d bytes: ", pDev->pRxFifoRead->nIndex, nBytes ) );
+#if 0
       for ( i = 0; i < nBytes; i++ )
          sprintf (&msg_dump_buf[i*3], "%02X ", pDev->pRxFifoRead->pData[i] ) ;
       TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "%s\n\r", msg_dump_buf ) );
+#else
+   TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "\r\n[00]:") );   
+   for ( i = 0; i < nBytes; i++ )
+   {
+      sprintf(&msg_dump_buf[0], "%02X ", pDev->pRxFifoRead->pData[i]);
+      msg_dump_buf[4]=0x0;
+      TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "%s", msg_dump_buf) );
+      if(i%16==15)
+      {
+        TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "\r\n") );  
+        if(i<nBytes-1)
+            TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "[%02X]:",16*(i/16+1)) );   
+      }
+   }
+   TRACE ( PEF24628E_DRV, DBG_LEVEL_LOW, ( _LOGGING_PREFIX "\r\n") );  
+#endif
+}
 #endif
 
       /* Definition of read policy: If frame is bigger than buffer, discard the 
@@ -2262,9 +2308,10 @@ IFX_int32_t Pef24628e_Get_IDC_Msg ( PEF24628E_DEV_t * pDev, IFX_uint8_t * pDst,
    }
 #endif /* INCLUDE_MPI */
 
+#if 0
    TRACE ( PEF24628E_DRV, DBG_LEVEL_NORMAL,
            ( PREFIX "Pef24628e_Get_IDC_Msg: received %d bytes\n\r", nBytes ) );
-
+#endif
    return nBytes;
 }
 
