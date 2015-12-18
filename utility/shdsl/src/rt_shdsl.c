@@ -61,7 +61,7 @@ uint8_t g_TCMode=1;//0 for atm mode;1 for EFM mode
 unsigned int g_maxbaserate = 0x0056EA00;
 unsigned int g_lineProbe = LP_ENABLE;
 unsigned int g_configed = 0;
-
+unsigned int g_PAM_Constellation = AUTO_PAM_SELECT;
 
 LINE_STATUS g_lineStatus;
 
@@ -263,7 +263,8 @@ BOOL rt_pef24628_poll( UINT8 device, UINT16 idc_msg_id_expected )
 	  case ACK_PMD_STATUSGET:
 	  	PRINTF("SOC4E[%02d]: ACK_PMD_STATUSGET(%x)\n\r", device,ACK_PMD_STATUSGET);
 		p_ack_pmd_status = (ACK_PMD_StatusGet_t*)(pBuf+4);
-		PRINTF("SOC4E[%02d]: LinkNo=0x%x,datarate=0x%x\n\r", device,p_ack_pmd_status->LinkNo,
+		PRINTF("SOC4E[%02d]: LinkNo=0x%x,datarate=0x%x(%d)\n\r", device,p_ack_pmd_status->LinkNo,
+																	p_ack_pmd_status->DataRate,
 																	p_ack_pmd_status->DataRate);
               if(g_init_finished)
 		{
@@ -579,6 +580,15 @@ long rt_set_lp(unsigned int value)
 }
 FINSH_FUNCTION_EXPORT(rt_set_lp, shdsl set lineprobe);
 
+long rt_set_pam(unsigned int value)
+{
+	g_PAM_Constellation = value;
+		rt_kprintf("g_lineProbe set to %d\r\n",g_PAM_Constellation);
+
+	return 0;
+}
+FINSH_FUNCTION_EXPORT(rt_set_pam, shdsl set pam);
+
 
 long rt_set_dump(unsigned int value)
 {
@@ -598,7 +608,7 @@ long rt_get_config(void)
 	rt_kprintf("g_maxbaserate : %d\r\n",g_maxbaserate);
 	rt_kprintf("g_configed : %d\r\n",g_configed);
        rt_kprintf("g_pefdump : %d\r\n",g_pefdump);     
-
+       rt_kprintf("g_PAM_Constellation : %d\r\n",g_PAM_Constellation);     
 	return 0;
 }
 FINSH_FUNCTION_EXPORT(rt_get_config, shdsl get config);
@@ -870,11 +880,13 @@ void rt_CO_init(UINT8 device)
 	//disable line probe
 	cmd_pmd_spanprofilegroupconfig.LineProbe = g_lineProbe;
 	//cmd_pmd_spanprofilegroupconfig.LineProbe = 0x00000002;
-	cmd_pmd_spanprofilegroupconfig.PAM_Constellation = 0x00000000;
+	cmd_pmd_spanprofilegroupconfig.PAM_Constellation = g_PAM_Constellation;
 	cmd_pmd_spanprofilegroupconfig.CapListStyle = 0x00000000;
 	cmd_pmd_spanprofilegroupconfig.PBO_Mode = 0x00000000;
 	cmd_pmd_spanprofilegroupconfig.EPL_Mode = 0x00000008;
 	cmd_pmd_spanprofilegroupconfig.PBO_Value = 0x00000000;
+       cmd_pmd_spanprofilegroupconfig.PBO_Offset = 0x00000000;
+       cmd_pmd_spanprofilegroupconfig.MaxBaudRate = 0x00000000;
     	rt_kprintf("**********************CMD_PMD_SPANPROFILEGROUPCONFIG********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_PMD_SPANPROFILEGROUPCONFIG, &cmd_pmd_spanprofilegroupconfig, sizeof(cmd_pmd_spanprofilegroupconfig)) == FALSE)
 	{
@@ -1188,20 +1200,30 @@ void rt_CPE_init(UINT8 device,UINT8 ch)
 	cmd_pmd_spanprofilegroupconfig.TransMode = 0x00000000;
 	cmd_pmd_spanprofilegroupconfig.RemoteEnabled = 0x00000001;
 	cmd_pmd_spanprofilegroupconfig.PowerFeeding = 0x00000000;
+#if 1
 	cmd_pmd_spanprofilegroupconfig.CC_TargetMarginDown = 0x00000006;
 	cmd_pmd_spanprofilegroupconfig.WC_TargetMarginDown = 0x00000006;
 	cmd_pmd_spanprofilegroupconfig.CC_TargetMarginUp = 0x00000006;
 	cmd_pmd_spanprofilegroupconfig.WC_TargetMarginUp = 0x00000006;
-	cmd_pmd_spanprofilegroupconfig.UsedTargetMargins = 0x00000005;
+       cmd_pmd_spanprofilegroupconfig.UsedTargetMargins = 0x00000005;
+#else
+       cmd_pmd_spanprofilegroupconfig.CC_TargetMarginDown = 0x00000001;
+	cmd_pmd_spanprofilegroupconfig.WC_TargetMarginDown = 0x00000001;
+	cmd_pmd_spanprofilegroupconfig.CC_TargetMarginUp = 0x00000001;
+	cmd_pmd_spanprofilegroupconfig.WC_TargetMarginUp = 0x00000001;
+       cmd_pmd_spanprofilegroupconfig.UsedTargetMargins = 0x00000000;
+#endif
 	cmd_pmd_spanprofilegroupconfig.RefClock = 0x00000004;
 	//disable line probe
 	//cmd_pmd_spanprofilegroupconfig.LineProbe = 0x00000002;
 	cmd_pmd_spanprofilegroupconfig.LineProbe = g_lineProbe;
-	cmd_pmd_spanprofilegroupconfig.PAM_Constellation = 0x00000000;
+	cmd_pmd_spanprofilegroupconfig.PAM_Constellation = g_PAM_Constellation;
 	cmd_pmd_spanprofilegroupconfig.CapListStyle = 0x00000000;
 	cmd_pmd_spanprofilegroupconfig.PBO_Mode = 0x00000000;
 	cmd_pmd_spanprofilegroupconfig.EPL_Mode = 0x00000008;
 	cmd_pmd_spanprofilegroupconfig.PBO_Value = 0x00000000;
+       cmd_pmd_spanprofilegroupconfig.PBO_Offset = 0x00000000;
+       cmd_pmd_spanprofilegroupconfig.MaxBaudRate = 0x00000000;
     //rt_kprintf("**********************CMD_PMD_SPANPROFILEGROUPCONFIG********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_PMD_SPANPROFILEGROUPCONFIG, &cmd_pmd_spanprofilegroupconfig, sizeof(cmd_pmd_spanprofilegroupconfig)) == FALSE)
 	{g_configed = 0;
@@ -1274,7 +1296,7 @@ void rt_CPE_init(UINT8 device,UINT8 ch)
 	//WAIT(1);
 
     cmd_pmd_control.LinkNo = ch;				 //only send to master channel
-	cmd_pmd_control.LinkControl = 0x00000001;
+	cmd_pmd_control.LinkControl = 0x00000000;  //cpe set to 0(linkdown)
 	cmd_pmd_control.ActivationState = START_AFTER_INIT;
 	//rt_kprintf("**********************CMD_PMD_CONTROL********************\r\n");
 	if (rt_shdsl_send_idc_msg(device, CMD_PMD_CONTROL, &cmd_pmd_control, sizeof(cmd_pmd_control)) == FALSE)
@@ -1555,8 +1577,8 @@ void rt_msgdispatch(struct rt_msg* pmsg)
                 g_lineStatus.linkStatus = UP_DATA_MODE;
                 
                 //update SNR margin timer
-                gt=rt_timer_create("t1",rt_checkSNR,RT_NULL,500,RT_TIMER_FLAG_ONE_SHOT);
-                rt_timer_start(gt);
+                //gt=rt_timer_create("t1",rt_checkSNR,RT_NULL,500,RT_TIMER_FLAG_ONE_SHOT);
+                //rt_timer_start(gt);
             }
             break;
 
