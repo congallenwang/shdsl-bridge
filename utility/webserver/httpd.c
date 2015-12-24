@@ -251,7 +251,7 @@ httpd_appcall(void)
                         /* Check for a request for "/". */
                         if (hs->http.uri[0] == ISO_slash && hs->http.uri_len == 1) {
                             web_select_page("index", hs);
-                        } else {
+                        } else {                            
                             web_select_page((const char *) &hs->http.uri[1], hs);
                         } 
 

@@ -16,6 +16,7 @@
 #include "finsh.h"
 
 #include "rt_shdsl.h"
+#include "configmanage.h"
 
 #define IDC_FW_OFFSET 0x32000
 #define IDC_FW_LEN 180308
@@ -68,8 +69,11 @@ LINE_STATUS g_lineStatus;
 //dump flag
 unsigned int g_pefdump=0;
 
+extern CONFIG_PARAM g_config;
+
 void rt_CO_init(UINT8 device);
 void rt_CPE_init(UINT8 device,UINT8 ch);
+void rt_shdsl_apply_config();
 
 VOID rt_sci_monitor_dump(const UINT8 *pData, UINT32 nLength)
 {
@@ -325,7 +329,18 @@ BOOL rt_pef24628_poll( UINT8 device, UINT16 idc_msg_id_expected )
 		PRINTF("SOC4E[%02d]: EVT_EOC_LINKSTATE(%x)\n\r", device,EVT_EOC_LINKSTATE);
 		p_Evt_eoc_linkstate = (struct EVT_EOC_LinkState*)(pBuf+4);
 		PRINTF("SOC4E[%02d]: LinkNo=0x%x,State=0x%x\n\r", device,p_Evt_eoc_linkstate->LinkNo,
-																						p_Evt_eoc_linkstate->State);
+																p_Evt_eoc_linkstate->State);
+                if(g_init_finished)
+                {
+                    p_msg = (struct rt_msg*)rt_malloc(sizeof(struct rt_msg));			
+                    if(p_msg != RT_NULL)
+                    {
+                        p_msg->msg_id = EVT_EOC_LINKSTATE;
+                        p_msg->state= p_Evt_eoc_linkstate->State;
+                        p_msg->linkno = p_Evt_eoc_linkstate->LinkNo;
+                        rt_mb_send(&g_mb,(rt_uint32_t)p_msg);
+                    }			
+                }  
 		break;
 
 	case EVT_EOC_MESSAGE:
@@ -769,6 +784,7 @@ void rt_CO_init(UINT8 device)
 	struct CMD_StatusPinsConfig cmd_statuspinconfig;
 	unsigned char ret = 0;
 	g_configed = 0;
+       g_init_finished=0;
 	
        rt_kprintf("call CO_init\r\n");
 
@@ -987,7 +1003,16 @@ void rt_CO_init(UINT8 device)
 	//	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_PMD_CONTROL send ok******************** \n\r\r\n"));
 	//WAIT(5000);
 
-	g_configed = 1-ret;
+
+       //init line status
+       g_lineStatus.linkStatus = NOT_READY;
+       g_lineStatus.dateRate = 0;
+       g_lineStatus.snr_c = 0;
+       g_lineStatus.snr_n = 0;
+       
+       g_init_finished=1; 
+
+       g_configed = 1-ret;
 	if(g_configed)
 		rt_kprintf("CO config success\r\n");
 	return;
@@ -1334,10 +1359,10 @@ void rt_CPE_init(UINT8 device,UINT8 ch)
 	//WAIT(1);
 
        //init line status
-       g_lineStatus.linkStatus = 0;
+       g_lineStatus.linkStatus = NOT_READY;
        g_lineStatus.dateRate = 0;
-        g_lineStatus.snr_c = 0;
-        g_lineStatus.snr_n = 0;
+       g_lineStatus.snr_c = 0;
+       g_lineStatus.snr_n = 0;
 
         g_init_finished=1;
     
@@ -1512,10 +1537,16 @@ void rt_shp_thread_entry(void* parameter)
 rt_timer_t gt;
 struct rt_msg gmsg;
 
-void rt_checkSNR(void* p)
+void rt_sendmb(unsigned int id)
+{
+        gmsg.msg_id = id;
+        rt_mb_send(&g_mb,(rt_uint32_t)&gmsg);
+}
+
+void rt_checkSNR()
 {
 
-#if 0
+#if 1
         CMD_PMD_PM_ParamGet_t cmd_pmd_pm_parameterget;
         cmd_pmd_pm_parameterget.LinkNo = 0;
         if(g_rcmode)
@@ -1523,12 +1554,14 @@ void rt_checkSNR(void* p)
         else
             cmd_pmd_pm_parameterget.Unit_ID = STU_C_UNIT;	
         rt_shdsl_send_idc_msg(0, CMD_PMD_PM_PARAMGET, &cmd_pmd_pm_parameterget, sizeof(cmd_pmd_pm_parameterget));
-#endif
+#else
         rt_kprintf("rt_checksnr\r\n");
         gmsg.msg_id = 100;
         rt_mb_send(&g_mb,(rt_uint32_t)&gmsg);
+#endif
  }
 
+uint32_t ETH_WritePHYRegister(uint16_t PHYAddress, uint16_t PHYReg, uint16_t PHYValue);
 void rt_msgdispatch(struct rt_msg* pmsg)
 {
     CMD_PMD_StatusGet_t cmd_pmd_statusget;
@@ -1539,8 +1572,9 @@ void rt_msgdispatch(struct rt_msg* pmsg)
 
     switch(pmsg->msg_id)
     {
-        //check SNR
+        //reinit
         case 100:    
+#if 0            
             cmd_pmd_pm_parameterget.LinkNo = 0;
             if(g_rcmode)
                 cmd_pmd_pm_parameterget.Unit_ID = STU_R_UNIT;
@@ -1548,11 +1582,16 @@ void rt_msgdispatch(struct rt_msg* pmsg)
                 cmd_pmd_pm_parameterget.Unit_ID = STU_C_UNIT;	
             rt_shdsl_send_idc_msg(0, CMD_PMD_PM_PARAMGET, &cmd_pmd_pm_parameterget, sizeof(cmd_pmd_pm_parameterget));
             rt_timer_delete(gt);
+#else
+   	     rt_thread_sleep(500);
+            rt_shdsl_apply_config();
+#endif
             break;
 
         case EVT_PMD_LINKSTATE:
             rt_kprintf("Event: id:0x%x,linkno:%d,state:%d\r\n",pmsg->msg_id,pmsg->linkno,pmsg->state);
             //reach link status, check link speed
+#if 0
             if(UP_DATA_MODE==pmsg->state)
             {
               	cmd_pmd_statusget.LinkNo = 0;
@@ -1566,15 +1605,25 @@ void rt_msgdispatch(struct rt_msg* pmsg)
                 g_lineStatus.snr_c = 0;
                 g_lineStatus.snr_n = 0;
             }
+#endif
+            //link is down, reinit if in CO mode
+            if(DOWN_NOT_READY == pmsg->state)
+            {
+                if(0 == g_rcmode)
+                {
+                    rt_kprintf("re init CO mode");
+                    rt_CO_init(0);
+                }
+            }
             break;
 
         case ACK_PMD_STATUSGET:
             rt_kprintf("Event: id:0x%x,linkno:%d,datarate:%d\r\n",pmsg->msg_id,pmsg->linkno,pmsg->datarate);
             if(pmsg->datarate != 0 && pmsg->datarate<6000)
             {
-                //update line status:
+                //update link rate:
                 g_lineStatus.dateRate=pmsg->datarate;
-                g_lineStatus.linkStatus = UP_DATA_MODE;
+                //g_lineStatus.linkStatus = UP_DATA_MODE;
                 
                 //update SNR margin timer
                 //gt=rt_timer_create("t1",rt_checkSNR,RT_NULL,500,RT_TIMER_FLAG_ONE_SHOT);
@@ -1591,7 +1640,36 @@ void rt_msgdispatch(struct rt_msg* pmsg)
              g_lineStatus.snr_c = pmsg->snr_c;
              g_lineStatus.snr_n = pmsg->snr_n;
              break;
-             
+
+        //EVT_EOC_LINKSTATE,link ready
+        case EVT_EOC_LINKSTATE:
+            rt_kprintf("Event: id:0x%x,linkno:%d,state:%d\r\n",pmsg->msg_id,pmsg->linkno,
+                                                                                                           pmsg->state); 
+            //link state change
+            //NOT_READY;READY
+            g_lineStatus.linkStatus = pmsg->state;
+
+            //if linkup, check the link speed
+            if(READY==pmsg->state)
+            {
+              	cmd_pmd_statusget.LinkNo = 0;
+			rt_shdsl_send_idc_msg(0, CMD_PMD_STATUSGET, &cmd_pmd_statusget, sizeof(cmd_pmd_statusget));
+                     //force phy6 to link
+                     ETH_WritePHYRegister(6,22,0x873f);
+            }            
+            else
+            {
+                    //clear the snr reading
+                     g_lineStatus.dateRate=0;
+                     g_lineStatus.snr_c = 0;
+                     g_lineStatus.snr_n = 0;
+                     //clear phy6 link bit
+                     ETH_WritePHYRegister(6,22,0x073f);
+            }
+
+
+            break;
+
         default:
             rt_kprintf("unknow msg ID\r\n",pmsg->msg_id);
             break;
@@ -1605,6 +1683,9 @@ void rt_shs_thread_entry(void* parameter)
 
 	//check button for mode selection
 	g_rcmode = ReadButton() & 0x01;
+
+       //init config after checking the button 
+     	initconfig(); 
 	
 	rt_kprintf("basic config first\r\n");	
 	if(g_rcmode)
@@ -1650,4 +1731,38 @@ int rt_shdsl_thread_init(void)
 		rt_kprintf("shs ok\r\n");
 
 	return 0;
+}
+
+//call from web config
+void rt_shdsl_apply_config()
+{
+        unsigned char flag=0;
+        unsigned int maxrate;
+        
+        rt_kprintf("dealy sconfig change, re init");    
+
+        maxrate = g_config.maxrate * 64 * 1000;
+        if(g_maxbaserate != maxrate)
+        {
+            g_maxbaserate = maxrate;
+            flag = 1;
+        }
+
+        if(g_lineProbe != g_config.lineprobe+1)
+        {
+            g_lineProbe = g_config.lineprobe+1;
+            flag = 1;
+                
+        }
+
+        if((0==g_rcmode && 1==g_config.dslService) || 
+            (1==g_rcmode && 2==g_config.dslService))
+        {
+            g_rcmode = 1-g_rcmode;
+            flag = 1;                
+        }
+
+        if(flag)
+            rt_shdsl_cmd(3);
+            
 }

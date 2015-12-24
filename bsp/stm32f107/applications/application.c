@@ -187,7 +187,6 @@ void rt_init_thread_entry(void* parameter)
 
 	
 	//allen, start the eth device
-	initconfig();
 	rt_starteth();
 #endif
 

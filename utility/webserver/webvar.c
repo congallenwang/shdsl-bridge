@@ -287,7 +287,7 @@ static ushort type_d_functions(uchar  *escape, char  *dst_ptr)
 
         //dsl status
         case 99:            
-            if(g_lineStatus.linkStatus ==3)
+            if(g_lineStatus.linkStatus ==0)
                 sprintf(dst_ptr,"%s","Activated");
             else
                 sprintf(dst_ptr,"%s","Idle mode");

@@ -9,7 +9,7 @@
 #include "uip.h"
 #include "fs.h"
 #include "httpd.h"
-
+#include "rt_shdsl.h"
  
 
 #ifndef NULL
@@ -48,10 +48,23 @@ fs_strcmp(const char *str1, const char *str2)
   goto loop;
 }
 /*-----------------------------------------------------------------------------------*/
+extern LINE_STATUS g_lineStatus;
+void rt_checkSNR();
+
 int
 fs_open(const char *name, struct fs_file  *file)
 {
     uchar j;
+
+    //allen:update snr margin
+    if(fs_strcmp(name, "status") == 0) 
+    {
+        if(0==g_lineStatus.linkStatus)
+        {
+            rt_kprintf("refresh snr reading");
+            rt_checkSNR();            
+        }
+    }
 
     for (j = 0; j < ARRAY_LENGTH(file_dir); j++) {
         if(fs_strcmp(name, file_dir[j].name) == 0) {

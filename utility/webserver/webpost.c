@@ -393,6 +393,8 @@ int atoi(unsigned char* str)
 }
 */
 
+void rt_shdsl_apply_config();
+void rt_sendmb(unsigned int id);
 void web_dslconfig_func(struct httpd_state *hs)
 {
     //dslService=1&caplist_co=0&caplist_rt=0&dslWires=3&dslStandard=7&lineprobe=1&extend=0&extend_rate_fix_value=0&minrate=3&maxrate=89&dslmode=13&SUBMIT=Apply
@@ -483,6 +485,11 @@ void web_dslconfig_func(struct httpd_state *hs)
    
 
     web_select_page("config", hs);
+
+    //update the config and re init shdsl
+    //rt_shdsl_apply_config();    
+    rt_sendmb(100);
+
 }
  
  

@@ -7,6 +7,8 @@
 #include "string.h"
 #include "sys_noOSLib.h"
 
+#include "finsh.h"
+
 #include "pef24628_drv.h"
 #include "shdsl_board.h"
 
@@ -153,6 +155,16 @@ void MPI_WriteReg(unsigned int Reg,unsigned char RegValue)
 	*(__IO unsigned char*) (addr)= RegValue;	
 }
 
+long reg_wt(unsigned int Reg,unsigned char RegValue)
+{
+
+    MPI_WriteReg(Reg,RegValue);
+    //rt_kprintf("reg(%d)=0x%x\r\n",reg,MPI_ReadReg(reg));
+    return 0;
+}
+
+FINSH_FUNCTION_EXPORT(reg_wt, mpi write test);
+
 unsigned char MPI_ReadReg(unsigned int Reg)
 {
   unsigned char data;
@@ -165,6 +177,14 @@ unsigned char MPI_ReadReg(unsigned int Reg)
   return  data;
 }
 
+long reg_rd(unsigned int reg)
+{
+
+    rt_kprintf("reg(%d)=0x%x\r\n",reg,MPI_ReadReg(reg));
+    return 0;
+}
+
+FINSH_FUNCTION_EXPORT(reg_rd, mpi read test);
 
 #define IDC_FW_OFFSET 0x32000
 #define IDC_FW_LEN 180308

@@ -12,11 +12,22 @@ void netif_set_default(struct netif *netif)
 }
 unsigned char  mymac[6]={0xcc,0xbb,0xaa,0x99,0x88,0x02}; 
 
+
+unsigned char ReadButton();
+
+
 void netif_set_addr(struct netif *netif, struct ip_addr *ipaddr,  struct ip_addr *netmask,
     struct ip_addr *gw)
 {
      uip_ipaddr_t hipaddr;
-     uip_ipaddr(hipaddr, RT_LWIP_IPADDR0,RT_LWIP_IPADDR1,RT_LWIP_IPADDR2,RT_LWIP_IPADDR3);
+
+     unsigned char tmp=0;
+     //read button to differ mac/ip,fix me
+     tmp=0x80 & ReadButton();
+     if(tmp)
+        tmp=1;
+
+     uip_ipaddr(hipaddr, RT_LWIP_IPADDR0,RT_LWIP_IPADDR1,RT_LWIP_IPADDR2,(RT_LWIP_IPADDR3+tmp));
      uip_sethostaddr(hipaddr);
      uip_ipaddr(hipaddr, RT_LWIP_GWADDR0,RT_LWIP_GWADDR1,RT_LWIP_GWADDR2,RT_LWIP_GWADDR3);
      uip_setdraddr(hipaddr);

@@ -3949,12 +3949,20 @@ void GPIO_Configuration(void)
 
 
 extern unsigned char  mymac[]; 
+unsigned char ReadButton();
+
 void rt_hw_stm32_eth_init()
 {
+    unsigned char tmp=0;
+    
     RCC_Configuration();
     GPIO_Configuration();
     NVIC_Configuration();
 
+    //read button to differ mac/ip,fix me
+    tmp=0x80 & ReadButton();
+    mymac[5] += tmp;
+    
     // OUI 00-80-E1 STMICROELECTRONICS
     stm32_eth_device.dev_addr[0] = mymac[0];//0x00;
     stm32_eth_device.dev_addr[1] = mymac[1];//0x33;
