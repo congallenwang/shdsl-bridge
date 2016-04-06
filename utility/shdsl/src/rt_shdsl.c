@@ -63,11 +63,15 @@ unsigned int g_maxbaserate = 0x0056EA00;
 unsigned int g_lineProbe = LP_ENABLE;
 unsigned int g_configed = 0;
 unsigned int g_PAM_Constellation = AUTO_PAM_SELECT;
+unsigned int g_duplex=FULL_DUPLEX;
+unsigned int g_speed=MII_100BT;
 
 LINE_STATUS g_lineStatus;
 
 //dump flag
 unsigned int g_pefdump=0;
+
+
 
 extern CONFIG_PARAM g_config;
 
@@ -514,6 +518,25 @@ BOOL rt_shdsl_send_idc_msg(UINT8 device, UINT16 msg_id, VOID const * pSrc, UINT1
 	return ret;
 }
 
+
+long rt_set_loopback(unsigned int mode)
+{
+    struct CMD_SystemInterfaceLoopControl cmd_loopcontrol;
+
+    cmd_loopcontrol.LinkNo = 0;
+    cmd_loopcontrol.LoopMode = mode;
+
+    if (rt_shdsl_send_idc_msg(0, CMD_SYSTEMINTERFACELOOPCONTROL, &cmd_loopcontrol, sizeof(cmd_loopcontrol)) == FALSE)
+    {
+    		TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("cmd_loopcontrol() failed ...reset \n\r"));
+    }
+    else
+    	TRACE(PEF24624_LIB,DBG_LEVEL_HIGH,("*********************CMD_SYSTEMINTERFACELOOPCONTROL send ok******************** \n\r\r\n"));
+
+    return;
+}
+FINSH_FUNCTION_EXPORT(rt_set_loopback, shdsl set loopback);
+
 long rt_shdsl_cmd(unsigned int cmd)
 {
 	rt_err_t result;
@@ -565,6 +588,8 @@ long rt_shdsl_cmd(unsigned int cmd)
 				rt_CO_init(0);
 			else
 				rt_CPE_init(0,0);
+            
+
 		default:
 			break;
 	}
@@ -615,6 +640,16 @@ long rt_set_dump(unsigned int value)
 FINSH_FUNCTION_EXPORT(rt_set_dump, shdsl set pef driver dump);
 
 
+long rt_set_mii(unsigned int duplex,unsigned int speed)
+{
+	g_duplex= duplex;
+       g_speed=speed;
+	rt_kprintf("g_duplex %d, g_speed %d\r\n",g_duplex,g_speed);
+
+	return 0;
+}
+FINSH_FUNCTION_EXPORT(rt_set_mii, shdsl set pef driver mii config);
+
 long rt_get_config(void)
 {
 	rt_kprintf("g_rcmode : %d\r\n",g_rcmode);
@@ -623,7 +658,8 @@ long rt_get_config(void)
 	rt_kprintf("g_maxbaserate : %d\r\n",g_maxbaserate);
 	rt_kprintf("g_configed : %d\r\n",g_configed);
        rt_kprintf("g_pefdump : %d\r\n",g_pefdump);     
-       rt_kprintf("g_PAM_Constellation : %d\r\n",g_PAM_Constellation);     
+       rt_kprintf("g_PAM_Constellation : %d\r\n",g_PAM_Constellation);   
+       rt_kprintf("g_duplex %d, g_speed %d\r\n",g_duplex,g_speed);
 	return 0;
 }
 FINSH_FUNCTION_EXPORT(rt_get_config, shdsl get config);
@@ -1062,8 +1098,8 @@ void rt_CPE_init(UINT8 device,UINT8 ch)
 	//=================================================
 	//Configure xMII interface, only need do one time after fw download. CMD_xMII_Modify.
 	cmd_xmiimodify.LinkNo = ch;   
-	cmd_xmiimodify.Speed = 0x01;//MII_100BT
-	cmd_xmiimodify.Duplex = 0x01;//FULL_DUPLEX
+	cmd_xmiimodify.Speed = g_speed;//MII_100BT
+	cmd_xmiimodify.Duplex = g_duplex;//FULL_DUPLEX
 	cmd_xmiimodify.SMII_SyncMode = 0x0;//NORMAL
 	cmd_xmiimodify.AltCollision = 0x1;//enable
 	cmd_xmiimodify.RxDuringTx = 0x1;//enable
