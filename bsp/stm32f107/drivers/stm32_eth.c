@@ -3235,7 +3235,7 @@ static rt_err_t rt_stm32_eth_init(rt_device_t dev)
   GPIO_ETH_MediaInterfaceConfig(GPIO_ETH_MediaInterface_MII);
 
   /* Get HSE clock = 25MHz on PA8 pin (MCO) */
- // RCC_MCOConfig(RCC_MCO_HSE);
+  RCC_MCOConfig(RCC_MCO_HSE);
 
 #elif defined RMII_MODE  /* Mode RMII with STM3210C-EVAL */
   GPIO_ETH_MediaInterfaceConfig(GPIO_ETH_MediaInterface_RMII);
@@ -3904,7 +3904,7 @@ void GPIO_Configuration(void)
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
   GPIO_Init(GPIOD, &GPIO_InitStructure);  
-#else
+//#else
   /* Configure MCO (PA8) as alternate function push-pull */
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;

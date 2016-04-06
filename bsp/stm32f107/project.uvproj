@@ -75,7 +75,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>fromelf --bin !L --output .\build\rtthread.bin</UserProg1Name>
+            <UserProg1Name>fromelf --bin !L --output .\build\remedy.bin</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -736,6 +736,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\utility\shdsl\src\drv_pef24628e_common.c</FilePath>
             </File>
+            <File>
+              <FileName>configmanage.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\utility\shdsl\src\configmanage.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -892,11 +897,6 @@
               <FilePath>..\..\utility\webpages\duplicate.c</FilePath>
             </File>
             <File>
-              <FileName>get.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\utility\webpages\get.c</FilePath>
-            </File>
-            <File>
               <FileName>httpstat.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\utility\webpages\httpstat.c</FilePath>
@@ -910,21 +910,6 @@
               <FileName>left.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\utility\webpages\left.c</FilePath>
-            </File>
-            <File>
-              <FileName>password.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\utility\webpages\password.c</FilePath>
-            </File>
-            <File>
-              <FileName>passwordConfirmation.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\utility\webpages\passwordConfirmation.c</FilePath>
-            </File>
-            <File>
-              <FileName>postdemo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\utility\webpages\postdemo.c</FilePath>
             </File>
             <File>
               <FileName>sys.c</FileName>
@@ -945,6 +930,16 @@
               <FileName>uploaddone.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\utility\webpages\uploaddone.c</FilePath>
+            </File>
+            <File>
+              <FileName>default.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\utility\webpages\default.c</FilePath>
+            </File>
+            <File>
+              <FileName>manage.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\utility\webpages\manage.c</FilePath>
             </File>
           </Files>
         </Group>
